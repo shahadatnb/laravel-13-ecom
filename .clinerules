@@ -1,0 +1,511 @@
+# ============================================
+# Enterprise Cline Rules
+# Project : Laravel 13 Ecommerce
+# Frontend : Vue 3 SPA + TailwindCSS
+# Admin : AdminLTE
+# AI Assistant : Cline
+# ============================================
+
+## PROJECT CONTEXT
+
+You are working on a production-grade Ecommerce ERP system.
+
+Technology Stack
+
+- Laravel 13
+- PHP 8.4+
+- MySQL 8+
+- Vue 3 Composition API
+- Pinia
+- Vue Router
+- Tailwind CSS
+- AdminLTE (Admin Panel Only)
+- Sanctum Authentication
+- Vite
+
+Never use technologies outside this stack unless requested.
+
+------------------------------------------
+
+## GENERAL AI RULES
+
+Always think before writing code.
+
+Never guess.
+
+Never create incomplete code.
+
+Never leave TODO comments.
+
+Never generate placeholder code.
+
+Never skip validation.
+
+Always produce production-ready code.
+
+Always follow SOLID principles.
+
+Always follow DRY.
+
+Always follow KISS.
+
+Always follow Clean Architecture.
+
+Always optimize readability first.
+
+Never duplicate business logic.
+
+------------------------------------------
+
+## PROJECT STRUCTURE
+
+Backend
+
+app/
+
+Controllers
+
+Models
+
+Repositories
+
+Services
+
+Actions
+
+Policies
+
+Requests
+
+Resources
+
+Events
+
+Listeners
+
+Jobs
+
+Notifications
+
+Traits
+
+Enums
+
+Helpers
+
+DTOs
+
+Frontend
+
+resources/js
+
+Pages
+
+Components
+
+Layouts
+
+Composables
+
+Stores
+
+Router
+
+Services
+
+Utils
+
+------------------------------------------
+
+## NAMING RULES
+
+Class
+
+PascalCase
+
+ProductController
+
+ProductRepository
+
+ProductService
+
+Method
+
+camelCase
+
+createProduct()
+
+updateStock()
+
+calculateCommission()
+
+Variables
+
+camelCase
+
+$productPrice
+
+$totalAmount
+
+$affiliateUser
+
+Database
+
+snake_case
+
+product_categories
+
+affiliate_commissions
+
+wallet_transactions
+
+Route Names
+
+dot.notation
+
+products.index
+
+products.store
+
+orders.show
+
+------------------------------------------
+
+## CONTROLLER RULES
+
+Controllers must remain thin.
+
+Controllers NEVER contain business logic.
+
+Controllers ONLY
+
+Validate Request
+
+Call Service
+
+Return Resource
+
+Nothing else.
+
+------------------------------------------
+
+## SERVICE RULES
+
+All business logic belongs inside Services.
+
+Examples
+
+ProductService
+
+OrderService
+
+AffiliateService
+
+WalletService
+
+CommissionService
+
+ReportService
+
+Services never return raw arrays.
+
+Services return DTO or Models.
+
+------------------------------------------
+
+## REPOSITORY RULES
+
+Repositories ONLY access database.
+
+Repositories NEVER contain business logic.
+
+Repositories NEVER return JsonResponse.
+
+Repositories NEVER call Request.
+
+------------------------------------------
+
+## MODEL RULES
+
+Models only contain
+
+Relationships
+
+Scopes
+
+Accessors
+
+Mutators
+
+Casting
+
+No business logic.
+
+------------------------------------------
+
+## REQUEST VALIDATION
+
+Always use FormRequest.
+
+Never validate inside Controller.
+
+Always authorize().
+
+Always use custom validation messages.
+
+------------------------------------------
+
+## DATABASE RULES
+
+Every table
+
+timestamps()
+
+softDeletes() where applicable
+
+Foreign Keys
+
+Indexes
+
+Constraints
+
+Always use migration.
+
+Never modify database manually.
+
+------------------------------------------
+
+## RELATIONSHIPS
+
+Always use Eloquent Relationships.
+
+Never write unnecessary joins.
+
+Always eager load relationships.
+
+Avoid N+1 queries.
+
+------------------------------------------
+
+## API RESPONSE
+
+Always use API Resource.
+
+Never return Model directly.
+
+Success Format
+
+{
+    "success": true,
+    "message": "...",
+    "data": {}
+}
+
+Error Format
+
+{
+    "success": false,
+    "message": "...",
+    "errors": {}
+}
+
+------------------------------------------
+
+## SECURITY
+
+Never trust client input.
+
+Always validate.
+
+Always authorize.
+
+Escape output.
+
+Prevent mass assignment.
+
+Use Policies.
+
+Use Gates.
+
+Protect sensitive routes.
+
+------------------------------------------
+
+## AUTHENTICATION
+
+Laravel Sanctum only.
+
+Never write custom auth.
+
+Use middleware.
+
+Use Policies.
+
+------------------------------------------
+
+## FILE UPLOAD
+
+Always validate mime type.
+
+Always validate size.
+
+Store using Storage.
+
+Never use move_uploaded_file().
+
+Generate unique filenames.
+
+------------------------------------------
+
+## IMAGE HANDLING
+
+Use Intervention Image.
+
+Generate thumbnail.
+
+Optimize image.
+
+Store original.
+
+------------------------------------------
+
+## ERROR HANDLING
+
+Never use dd()
+
+Never use dump()
+
+Never use var_dump()
+
+Use logging.
+
+Throw Exceptions.
+
+Handle exceptions globally.
+
+------------------------------------------
+
+## LOGGING
+
+Use Laravel Log.
+
+Never ignore exceptions.
+
+Log important actions.
+
+Log payment.
+
+Log wallet transaction.
+
+Log commission generation.
+
+------------------------------------------
+
+## QUEUE
+
+Use Queue for
+
+Email
+
+Notification
+
+Commission Calculation
+
+Image Processing
+
+Large Report
+
+------------------------------------------
+
+## CACHE
+
+Use Cache for
+
+Settings
+
+Categories
+
+Permissions
+
+Homepage Data
+
+Never cache user-sensitive data without keys.
+
+------------------------------------------
+
+## TESTING
+
+Write Feature Test.
+
+Write Unit Test.
+
+Test validation.
+
+Test authorization.
+
+Test API.
+
+------------------------------------------
+
+## FRONTEND RULES
+
+Use Vue Composition API.
+
+Use Pinia.
+
+No jQuery.
+
+No inline JavaScript.
+
+Create reusable components.
+
+Never duplicate UI.
+
+------------------------------------------
+
+## TAILWIND
+
+Tailwind only.
+
+No Bootstrap in Frontend.
+
+Responsive first.
+
+Mobile first.
+
+------------------------------------------
+
+## ADMIN PANEL
+
+AdminLTE only.
+
+Do not mix Tailwind inside Admin unless necessary.
+
+------------------------------------------
+
+## GIT
+
+Meaningful commits only.
+
+One feature per commit.
+
+Never commit .env.
+
+Never commit vendor.
+
+Never commit node_modules.
+
+------------------------------------------
+
+## AI INSTRUCTION
+
+Before generating code
+
+1. Analyze existing project.
+2. Reuse existing architecture.
+3. Never duplicate functionality.
+4. Follow existing naming convention.
+5. Ask only when information is missing.
+6. Generate complete code.
+7. Explain only if requested.
+8. Prefer maintainability over cleverness.

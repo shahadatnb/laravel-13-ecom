@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "startup": {},
+  "skills": {
+    "preloaded": [
+      "frontend-design",
+      "web-design-guidelines"
+    ]
+  }
+}

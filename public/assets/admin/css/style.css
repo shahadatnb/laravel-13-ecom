@@ -1,0 +1,282 @@
+page {
+    background-color: white;
+    display: block;
+    margin: 0 auto;
+    margin-bottom: 0.5cm;
+    box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
+}
+page[size="A4"] {  
+    width: 21cm;
+    height: 29.7cm; 
+}
+page[size="A4"][layout="landscape"] {
+    width: 29.7cm;
+    height: 21cm;  
+}
+page[size="A3"] {
+    width: 29.7cm;
+    height: 42cm;
+}
+page[size="A3"][layout="landscape"] {
+    width: 42cm;
+    height: 29.7cm;  
+}
+page[size="A5"] {
+    /* width: 14.8cm; */
+    width: 15.5cm;
+    height: 21cm;
+}
+page[size="A5"][layout="landscape"] {
+    width: 21cm;
+    height: 14.8cm;  
+}
+
+.content-header {
+	padding: 5px .5rem;
+}
+
+.cg-autocomplete {
+	z-index: 2 !important;
+}
+
+.invoicePrint .due-status {
+	position: absolute !important;
+	top: 15px;
+	right: 0;
+	font-size: 40px;
+}
+.invoicePrint .user-name span{
+    border-top: 1px solid #000;
+  }
+
+/* ──────────────────────────────────────────────
+   Toast Notification System
+   (Uses kd- prefix to avoid conflicts with
+    Bootstrap 4's .toast component classes)
+   ────────────────────────────────────────────── */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    max-width: 420px;
+    width: 100%;
+}
+
+.kd-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12);
+    animation: kdToastSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+.kd-toast.kd-toast-leaving {
+    animation: kdToastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes kdToastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(80px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes kdToastSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        max-height: 150px;
+    }
+    to {
+        opacity: 0;
+        transform: translateX(80px) scale(0.92);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+}
+
+.kd-toast .kd-toast-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: rgba(255,255,255,0.25);
+    margin-top: 1px;
+}
+
+.kd-toast .kd-toast-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.kd-toast .kd-toast-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.kd-toast .kd-toast-message {
+    opacity: 0.9;
+    font-size: 13px;
+    word-wrap: break-word;
+}
+
+.kd-toast .kd-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 16px;
+    line-height: 1;
+    transition: color 0.15s ease;
+    margin-left: 4px;
+}
+
+.kd-toast .kd-toast-close:hover {
+    color: #fff;
+}
+
+.kd-toast .kd-toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 0 0 8px 8px;
+    animation: kdToastShrink linear forwards;
+}
+
+@keyframes kdToastShrink {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* Toast types */
+.kd-toast.kd-toast-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.kd-toast.kd-toast-error {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c5e 100%);
+}
+
+.kd-toast.kd-toast-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    color: #1e1e1e;
+}
+
+.kd-toast.kd-toast-warning .kd-toast-icon {
+    background: rgba(0,0,0,0.15);
+}
+
+.kd-toast.kd-toast-warning .kd-toast-close {
+    color: rgba(0,0,0,0.5);
+}
+
+.kd-toast.kd-toast-warning .kd-toast-close:hover {
+    color: rgba(0,0,0,0.8);
+}
+
+.kd-toast.kd-toast-warning .kd-toast-progress {
+    background: rgba(0,0,0,0.2);
+}
+
+.kd-toast.kd-toast-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%);
+}
+
+/* Unsaved Changes Badge */
+.unsaved-badge {
+    display: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffc107;
+    margin-left: 8px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+    animation: unsavedPulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 6px rgba(255, 193, 7, 0.6);
+}
+
+@keyframes unsavedPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+@media print {
+    #toast-container { display: none; }
+    .unsaved-badge { display: none !important; }
+    body, page {
+        margin: 0 auto;
+        box-shadow: 0;
+        margin-bottom: 0cm;
+        width: 100%;
+        height: 100%;
+    }
+    html
+    {
+        background-color: #FFFFFF; 
+        margin: 0px;  /* this affects the margin on the html before sending to printer */
+    }
+    
+    a[href]:after {
+        display: none;
+        visibility: hidden;
+    }
+
+    .rheader{
+        padding-top: 1cm;
+    }
+
+    .badge-secondary{
+        color: #000;
+    }
+
+    .invoicePrint .rheader h2{
+        font-size: 1.8rem!important;
+    }
+
+    .invoicePrint .table tr th,.table tr td {
+        border: 1px solid #000000!important;
+        padding: 1px 5px!important;
+     }
+     .invoicePrint .table thead th {
+        text-align: center
+     }
+     .invoicePrint .table tfoot td {
+        font-size: 1.2em;
+        font-weight: bold;
+     }
+     .invoicePrint .modal-backdrop.show {
+       opacity: 0;
+     }
+}
