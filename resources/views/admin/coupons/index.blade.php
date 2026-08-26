@@ -48,7 +48,7 @@
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-warning">
                     <div class="inner">
-                        <h3>{{ number_format($stats['total_discount'], 2) }} <small>BDT</small></h3>
+                        <h3>{{ format_currency($stats['total_discount'], 2) }}</h3>
                         <p>Total Discount</p>
                     </div>
                     <div class="icon"><i class="fas fa-percentage"></i></div>
@@ -164,10 +164,10 @@
                                     @elseif($coupon->isFreeShipping())
                                         <span class="font-weight-bold text-info">Free Shipping</span>
                                     @else
-                                        <span class="font-weight-bold">{{ number_format($coupon->discount_value, 2) }}</span>
+                                        <span class="font-weight-bold">{{ format_currency($coupon->discount_value, 2) }}</span>
                                     @endif
                                     @if($coupon->max_discount)
-                                        <br><small class="text-muted">Max: {{ number_format($coupon->max_discount, 2) }}</small>
+                                        <br><small class="text-muted">Max: {{ format_currency($coupon->max_discount, 2) }}</small>
                                     @endif
                                 </td>
                                 <td>

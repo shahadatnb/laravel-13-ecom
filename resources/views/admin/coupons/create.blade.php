@@ -285,7 +285,7 @@ $(function () {
     function updateDiscountSymbol() {
         const type = $('select[name="type"]').val();
         const isPercentage = type === 'percentage' || type === 'percent';
-        $('#discount-symbol').text(isPercentage ? '%' : 'BDT');
+        $('#discount-symbol').text(isPercentage ? '%' : '{{ currency_symbol() }}');
     }
     $('select[name="type"]').on('change', updateDiscountSymbol);
     updateDiscountSymbol();

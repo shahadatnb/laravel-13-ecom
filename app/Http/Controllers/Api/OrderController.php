@@ -118,11 +118,6 @@ class OrderController extends Controller
         // For authenticated users, we use their registered email
         if ($request->user()) {
             $data['guest_email'] = null;
-        } elseif (! $data['guest_email']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Guest email is required for guest checkout.',
-            ], 422);
         }
 
         $order = $this->orderService->createOrder($data);

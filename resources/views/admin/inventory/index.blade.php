@@ -70,6 +70,7 @@
             </div>
             <div class="card-body">
                 <form method="GET" action="{{ route('admin.inventory.index') }}">
+                    {{-- Row 1: Search, Warehouse, Stock Status --}}
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -105,6 +106,35 @@
                             </div>
                         </div>
                     </div>
+                    {{-- Row 2: Variant Attribute Filters --}}
+                    @if(!empty($variantAttributes) && count($variantAttributes) > 0)
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Attribute Name</label>
+                                <select name="attr_name" id="attrName" class="form-control form-control-sm">
+                                    <option value="">All Attributes</option>
+                                    @foreach($variantAttributes as $attrName => $attrValues)
+                                        <option value="{{ $attrName }}" {{ request('attr_name') === $attrName ? 'selected' : '' }}>{{ $attrName }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Attribute Value</label>
+                                <select name="attr_value" id="attrValue" class="form-control form-control-sm">
+                                    <option value="">All Values</option>
+                                    @if(request('attr_name') && isset($variantAttributes[request('attr_name')]))
+                                        @foreach($variantAttributes[request('attr_name')] as $val)
+                                            <option value="{{ $val }}" {{ request('attr_value') === $val ? 'selected' : '' }}>{{ $val }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </form>
             </div>
         </div>
@@ -207,6 +237,22 @@
 <script>
 $(function () {
     $('.select2').select2({ theme: 'bootstrap4', minimumResultsForSearch: -1 });
+
+    // Dynamic attribute value dropdown
+    var variantAttributes = @json($variantAttributes ?? []);
+    var attrNameSelect = $('#attrName');
+    var attrValueSelect = $('#attrValue');
+
+    attrNameSelect.on('change', function() {
+        var selected = $(this).val();
+        attrValueSelect.html('<option value="">All Values</option>');
+
+        if (selected && variantAttributes[selected]) {
+            $.each(variantAttributes[selected], function(i, val) {
+                attrValueSelect.append('<option value="' + val + '">' + val + '</option>');
+            });
+        }
+    });
 });
 </script>
 @endpush

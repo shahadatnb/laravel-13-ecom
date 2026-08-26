@@ -11,6 +11,7 @@ use App\Models\Warehouse;
 use App\Services\InventoryServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class InventoryController extends Controller
@@ -23,13 +24,42 @@ class InventoryController extends Controller
 
     public function index(Request $request): View
     {
-        $filters = $request->only(['search', 'warehouse_id', 'stock_status']);
+        $filters = $request->only(['search', 'warehouse_id', 'stock_status', 'attr_name', 'attr_value']);
 
         $inventory = $this->inventoryService->searchInventory($filters);
         $stats = $this->inventoryService->getInventoryStatistics();
         $warehouses = Warehouse::active()->get();
 
-        return view('admin.inventory.index', compact('inventory', 'stats', 'warehouses'));
+        // Fetch all unique variant attributes for filter dropdowns
+        $rawAttributes = DB::table('product_variants')
+            ->whereNotNull('attributes')
+            ->where('attributes', '!=', 'null')
+            ->where('attributes', '!=', '')
+            ->selectRaw("JSON_KEYS(attributes) as keys")
+            ->get();
+
+        $variantAttributes = [];
+        foreach ($rawAttributes as $row) {
+            $keys = json_decode($row->keys, true);
+            if (!is_array($keys)) continue;
+            foreach ($keys as $key) {
+                $values = DB::table('product_variants')
+                    ->whereNotNull('attributes')
+                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(attributes, ?)) as val", ["$.\"{$key}\""])
+                    ->whereRaw("JSON_EXTRACT(attributes, ?) IS NOT NULL", ["$.\"{$key}\""])
+                    ->distinct()
+                    ->pluck('val')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                if (!empty($values)) {
+                    $variantAttributes[$key] = $values;
+                }
+            }
+        }
+
+        return view('admin.inventory.index', compact('inventory', 'stats', 'warehouses', 'variantAttributes'));
     }
 
     // === Warehouses ===

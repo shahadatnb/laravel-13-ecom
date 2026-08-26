@@ -11,7 +11,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Add New Slide</h3>
                     </div>
-                    <form action="{{ route('admin.settings.hero-slides.store') }}" method="POST">
+                    <form action="{{ route('admin.settings.hero-slides.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="card-body">
                             <div class="form-group">
@@ -71,6 +71,29 @@
                                 </div>
                             </div>
                             <div class="form-group">
+                                <label for="bg_image">Background Image <small class="text-muted">(optional)</small></label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="bg_image" name="bg_image" accept="image/*">
+                                    <label class="custom-file-label" for="bg_image">Choose background image</label>
+                                </div>
+                                <small class="text-muted">Displayed as hero background. Recommended: 1920x800px</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="feature_image">Feature Image <small class="text-muted">(optional)</small></label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="feature_image" name="feature_image" accept="image/*">
+                                    <label class="custom-file-label" for="feature_image">Choose feature image</label>
+                                </div>
+                                <small class="text-muted">Product/feature image shown on left or right side</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="image_position">Feature Image Position</label>
+                                <select name="image_position" id="image_position" class="form-control">
+                                    <option value="right" {{ old('image_position', 'right') === 'right' ? 'selected' : '' }}>Right Side</option>
+                                    <option value="left" {{ old('image_position') === 'left' ? 'selected' : '' }}>Left Side</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <div class="custom-control custom-switch">
                                     <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" checked>
                                     <label class="custom-control-label" for="is_active">Active</label>
@@ -106,7 +129,11 @@
                                 <tr>
                                     <td>{{ $slide->sort_order }}</td>
                                     <td>
-                                        <span style="font-size:28px;">{{ $slide->image_emoji ?? '🎉' }}</span>
+                                        @if($slide->bg_image)
+                                            <img src="{{ asset('storage/' . $slide->bg_image) }}" style="width:60px;height:40px;border-radius:4px;object-fit:cover;">
+                                        @else
+                                            <span style="font-size:28px;">{{ $slide->image_emoji ?? '🎉' }}</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <strong>{{ $slide->title }}</strong>
@@ -135,7 +162,7 @@
                                         <div class="modal fade" id="editSlide{{ $slide->id }}" tabindex="-1">
                                             <div class="modal-dialog modal-lg">
                                                 <div class="modal-content">
-                                                    <form action="{{ route('admin.settings.hero-slides.update', $slide) }}" method="POST">
+                                                    <form action="{{ route('admin.settings.hero-slides.update', $slide) }}" method="POST" enctype="multipart/form-data">
                                                         @csrf @method('PUT')
                                                         <div class="modal-header">
                                                             <h5 class="modal-title">Edit: {{ $slide->title }}</h5>
@@ -202,6 +229,46 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            <hr>
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <div class="form-group">
+                                                                        <label>Background Image <small class="text-muted">(optional)</small></label>
+                                                                        @if($slide->bg_image)
+                                                                            <div class="mb-2">
+                                                                                <img src="{{ asset('storage/' . $slide->bg_image) }}" style="max-width:200px;max-height:100px;border-radius:6px;object-fit:cover;">
+                                                                            </div>
+                                                                        @endif
+                                                                        <div class="custom-file">
+                                                                            <input type="file" class="custom-file-input" name="bg_image" accept="image/*">
+                                                                            <label class="custom-file-label">{{ $slide->bg_image ? 'Replace background' : 'Choose background' }}</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="form-group">
+                                                                        <label>Feature Image <small class="text-muted">(optional)</small></label>
+                                                                        @if($slide->feature_image)
+                                                                            <div class="mb-2">
+                                                                                <img src="{{ asset('storage/' . $slide->feature_image) }}" style="max-width:200px;max-height:100px;border-radius:6px;object-fit:cover;">
+                                                                            </div>
+                                                                        @endif
+                                                                        <div class="custom-file">
+                                                                            <input type="file" class="custom-file-input" name="feature_image" accept="image/*">
+                                                                            <label class="custom-file-label">{{ $slide->feature_image ? 'Replace feature' : 'Choose feature' }}</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-12">
+                                                                    <div class="form-group">
+                                                                        <label>Feature Image Position</label>
+                                                                        <select name="image_position" class="form-control">
+                                                                            <option value="right" {{ $slide->image_position === 'right' ? 'selected' : '' }}>Right Side</option>
+                                                                            <option value="left" {{ $slide->image_position === 'left' ? 'selected' : '' }}>Left Side</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                         <div class="modal-footer">
                                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -229,3 +296,14 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('.custom-file-input').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-label').html(fileName);
+    });
+});
+</script>
+@endpush

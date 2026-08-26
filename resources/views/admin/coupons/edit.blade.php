@@ -81,7 +81,7 @@
                                                 step="0.01" min="0" class="form-control @error('discount_value') is-invalid @enderror">
                                             <div class="input-group-append">
                                                 <span class="input-group-text" id="discount-symbol">
-                                                    @if($coupon->isPercentage()) % @else BDT @endif
+                                                    @if($coupon->isPercentage()) % @else {{ currency_symbol() }} @endif
                                                 </span>
                                             </div>
                                         </div>
@@ -274,7 +274,7 @@ $(function () {
     function updateDiscountSymbol() {
         const type = $('select[name="type"]').val();
         const isPercentage = type === 'percentage' || type === 'percent';
-        $('#discount-symbol').text(isPercentage ? '%' : 'BDT');
+        $('#discount-symbol').text(isPercentage ? '%' : '{{ currency_symbol() }}');
     }
     $('select[name="type"]').on('change', updateDiscountSymbol);
 });

@@ -86,7 +86,7 @@ import { useWishlistStore } from '@/stores/wishlist'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import { getImageUrl } from '@/utils/image'
-import { formatPrice, initCurrencySettings } from '@/utils/currency'
+import { formatPrice } from '@/utils/currency'
 import VariantSelector from '@/components/VariantSelector.vue'
 
 
@@ -118,7 +118,10 @@ const galleryImages = computed(() => {
   // Use variant images if a variant with images is selected
   const v = selectedVariant.value
   if (v && v.images && v.images.length > 0) return v.images
-  return product.images || []
+  if (product.images && product.images.length > 0) return product.images
+  // Fallback to the product thumbnail when no gallery images exist
+  if (product.thumbnail) return [{ image: product.thumbnail }]
+  return []
 })
 
 // Update currentImageIndex whenever selectedImage changes
@@ -772,22 +775,6 @@ async function toggleWishlist() {
                     <span>Brand:</span>
                     <span class="font-medium text-gray-900">{{ productStore.currentProduct.brand?.name || 'N/A' }}</span>
                   </div>
-                  <div class="flex items-center gap-2 text-gray-500">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    <span>Type:</span>
-                    <span class="font-medium text-gray-900 capitalize">{{ productStore.currentProduct.product_type || 'Simple' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2 text-gray-500">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Status:</span>
-                    <span class="font-medium capitalize" :class="productStore.currentProduct.status === 'published' ? 'text-green-600' : 'text-yellow-600'">
-                      {{ productStore.currentProduct.status }}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -883,7 +870,7 @@ async function toggleWishlist() {
               <RouterLink :to="`/product/${product.slug}`">
                 <div class="aspect-square bg-gray-50 p-4 flex items-center justify-center">
                   <img
-                    :src="getImageUrl(product.images?.[0]?.image)"
+                    :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)"
                     :alt="product.name"
                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />

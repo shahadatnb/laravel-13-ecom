@@ -185,4 +185,110 @@ class StockController extends Controller
 
         return view('admin.stock.show', compact('product', 'variant', 'inventory'));
     }
+
+    // === Bulk Stock Adjustment ===
+
+    /**
+     * Show the bulk stock adjustment form for simple products.
+     */
+    public function bulkAdjustForm(Request $request): View
+    {
+        $search = $request->get('search', '');
+
+        $query = Product::where('product_type', 'simple')
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'sku', 'stock', 'minimum_stock');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        $products = $query->orderBy('name')->paginate(30);
+        $warehouses = Warehouse::active()->get();
+
+        return view('admin.stock.bulk-adjust', compact('products', 'search', 'warehouses'));
+    }
+
+    /**
+     * Process bulk stock adjustment for simple products.
+     */
+    public function bulkAdjust(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'mode' => 'required|in:set,add,subtract',
+            'reason' => 'nullable|string|max:500',
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'exists:products,id',
+            'quantities' => 'required|array',
+            'quantities.*' => 'integer|min:0',
+        ]);
+
+        $warehouseId = $validated['warehouse_id'];
+        $mode = $validated['mode'];
+        $reason = $validated['reason'] ?? 'Bulk stock adjustment';
+        $productIds = $validated['product_ids'];
+        $quantities = $validated['quantities'];
+        $updated = 0;
+        $errors = [];
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($productIds as $productId) {
+                $qty = $quantities[$productId] ?? null;
+                if ($qty === null || $qty === '' || $qty < 0) {
+                    continue;
+                }
+                $qty = (int) $qty;
+
+                $product = Product::find($productId);
+                if (!$product || $product->product_type !== 'simple') {
+                    $errors[] = "Product #{$productId}: Not a simple product — skipped.";
+                    continue;
+                }
+
+                $currentStock = (int) $product->stock;
+                $newStock = match ($mode) {
+                    'set' => $qty,
+                    'add' => $currentStock + $qty,
+                    'subtract' => max(0, $currentStock - $qty),
+                    default => $currentStock,
+                };
+
+                // Update product stock
+                $product->update(['stock' => $newStock]);
+
+                // Update inventory record
+                $this->inventoryService->adjustStock(
+                    $productId,
+                    $warehouseId,
+                    $newStock,
+                    $reason,
+                    [
+                        'user_id' => auth()->id(),
+                        'description' => "Bulk {$mode}: {$currentStock} → {$newStock}",
+                    ]
+                );
+
+                $updated++;
+            }
+
+            DB::commit();
+
+            $summary = "Bulk adjustment complete: {$updated} products updated ({$mode}).";
+            if (!empty($errors)) {
+                $summary .= ' Errors: ' . implode(' | ', array_slice($errors, 0, 5));
+            }
+
+            return redirect()->route('admin.stock.index')
+                ->with('success', $summary);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Bulk adjustment failed: ' . $e->getMessage()])->withInput();
+        }
+    }
 }

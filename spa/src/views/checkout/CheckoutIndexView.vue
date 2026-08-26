@@ -1,11 +1,13 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 import { useToast } from 'vue-toastification'
 import OrderService from '@/services/OrderService'
+import DeliveryZoneService from '@/services/DeliveryZoneService'
+import SearchableSelect from '@/components/SearchableSelect.vue'
 import { formatPrice, initCurrencySettings } from '@/utils/currency'
 
 const router = useRouter()
@@ -15,6 +17,11 @@ const siteStore = useSiteStore()
 const toast = useToast()
 
 const submitting = ref(false)
+const districts = ref([])
+const selectedDistrict = ref('')
+const districtCharge = ref(null)
+const districtLoading = ref(false)
+const districtError = ref('')
 
 // Guest checkout state
 const guestEmail = ref('')
@@ -25,7 +32,7 @@ const form = ref({
   phone: authStore.user?.phone || '',
   address: '',
   city: '',
-  state: '',
+  district: '',
   postal_code: '',
   country: 'Bangladesh',
   notes: '',
@@ -36,41 +43,99 @@ const hasItems = computed(() => cartStore.itemCount > 0)
 const cartItems = computed(() => cartStore.items)
 const subtotal = computed(() => cartStore.subtotal)
 
-// Dynamic shipping & tax from site settings (with fallback defaults)
+// Dynamic tax from site settings (with fallback defaults)
 const taxRate = computed(() => {
   const val = parseFloat(siteStore.getSetting('tax_rate', '5'))
   return isNaN(val) ? 5 : val
 })
-const freeShippingThreshold = computed(() => {
-  const val = parseFloat(siteStore.getSetting('free_shipping_threshold', '50'))
-  return isNaN(val) ? 50 : val
-})
-const standardShippingRate = computed(() => {
-  const val = parseFloat(siteStore.getSetting('shipping_rate', '5'))
-  return isNaN(val) ? 5 : val
-})
 
-const shipping = computed(() => subtotal.value >= freeShippingThreshold.value ? 0 : standardShippingRate.value)
+// Shipping charge: from delivery zone API if district selected, else free threshold
+const shipping = computed(() => {
+  // If district-based charge is available, use it
+  if (districtCharge.value !== null) {
+    // Free shipping for COD threshold if charge is 0 or above threshold
+    if (districtCharge.value === 0) return 0
+    return districtCharge.value
+  }
+  // Fallback to settings-based free shipping
+  const freeShippingThreshold = parseFloat(siteStore.getSetting('free_shipping_threshold', '5000')) || 5000
+  if (subtotal.value >= freeShippingThreshold) return 0
+  const defaultRate = parseFloat(siteStore.getSetting('shipping_rate', '60')) || 60
+  return defaultRate
+})
 const tax = computed(() => subtotal.value * (taxRate.value / 100))
 const total = computed(() => subtotal.value + shipping.value + tax.value)
 
-// Initialize currency settings on mount
+// Fetch districts from delivery zones API
+async function fetchDistricts() {
+  try {
+    const response = await DeliveryZoneService.getDistricts()
+    if (response.data.success && response.data.data) {
+      districts.value = response.data.data
+    }
+  } catch (e) {
+    console.warn('Could not load delivery districts:', e)
+  }
+}
+
+// Calculate shipping charge when district changes
+async function calculateShipping() {
+  const district = selectedDistrict.value || form.value.district
+  if (!district) {
+    districtCharge.value = null
+    return
+  }
+  districtLoading.value = true
+  districtError.value = ''
+  try {
+    const response = await DeliveryZoneService.calculateCharge(district, subtotal.value)
+    if (response.data.success && response.data.data) {
+      const data = response.data.data
+      if (data.available === false) {
+        districtError.value = data.message || 'Delivery not available in this area'
+        districtCharge.value = null
+      } else {
+        districtCharge.value = data.charge ?? 0
+      }
+    } else {
+      districtCharge.value = null
+    }
+  } catch (e) {
+    console.warn('Could not calculate shipping:', e)
+    districtCharge.value = null
+  } finally {
+    districtLoading.value = false
+  }
+}
+
+// Watch district selection changes
+watch(selectedDistrict, (val) => {
+  form.value.district = val
+  if (val) {
+    calculateShipping()
+  } else {
+    districtCharge.value = null
+  }
+})
+
+// Initialize currency settings and fetch districts on mount
 onMounted(() => {
   if (siteStore.settings) {
     initCurrencySettings(siteStore.settings)
   }
+  fetchDistricts()
 })
 
 async function placeOrder() {
   if (!hasItems.value) { toast.error('Your cart is empty!'); return }
-  if (!form.value.name || !form.value.phone || !form.value.address || !form.value.city) {
+  if (!form.value.name || !form.value.phone || !form.value.address || !selectedDistrict.value) {
     toast.warning('Please fill in all required shipping fields.')
     return
   }
-  // Guest checkout email validation
-  if (!authStore.isAuthenticated) {
-    if (!guestEmail.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.value)) {
-      toast.warning('Please enter a valid email address for guest checkout, or sign in to your account.')
+  // Guest checkout email validation (optional)
+  if (!authStore.isAuthenticated && guestEmail.value) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.value)) {
+      toast.warning('Please enter a valid email address.')
       return
     }
   }
@@ -99,7 +164,7 @@ async function placeOrder() {
         phone: form.value.phone,
         address_line_1: form.value.address,
         city: form.value.city,
-        state: form.value.state,
+        district: selectedDistrict.value,
         postal_code: form.value.postal_code,
         country: form.value.country
       },
@@ -167,7 +232,7 @@ async function placeOrder() {
 
             <div class="space-y-3">
               <label class="block text-sm font-semibold text-gray-700 mb-1.5">
-                Email Address <span class="text-red-500">*</span>
+                Email Address <span class="text-gray-400 text-xs font-normal">(optional)</span>
               </label>
               <div class="flex flex-col sm:flex-row gap-3">
                 <input
@@ -176,8 +241,7 @@ async function placeOrder() {
                   autocomplete="email"
                   name="guest_email"
                   class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-                  placeholder="your@email.com"
-                  required
+                  placeholder="your@email.com (optional)"
                 />
                 <RouterLink
                   :to="{ name: 'login', query: { redirect: $route.fullPath } }"
@@ -232,12 +296,24 @@ async function placeOrder() {
                 <textarea v-model="form.address" rows="2" autocomplete="street-address" name="address" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all resize-none" placeholder="Street address, building, apartment"></textarea>
               </div>
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1.5">City <span class="text-red-500">*</span></label>
-                <input v-model="form.city" type="text" autocomplete="address-level2" name="city" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" placeholder="Dhaka" />
+                <SearchableSelect
+                  v-model="selectedDistrict"
+                  :options="districts"
+                  label="District"
+                  placeholder="Search district..."
+                  :required="true"
+                  search-key="name"
+                  value-key="name"
+                  sub-key="zone_name"
+                />
+                <p v-if="districtError" class="text-sm text-red-500 mt-1">{{ districtError }}</p>
+                <p v-else-if="districtLoading" class="text-sm text-gray-400 mt-1">Calculating shipping...</p>
+                <p v-else-if="districtCharge !== null" class="text-sm text-green-600 mt-1">Shipping: {{ districtCharge === 0 ? 'Free' : formatPrice(districtCharge) }}</p>
               </div>
+              <!--
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1.5">State / District</label>
-                <input v-model="form.state" type="text" autocomplete="address-level1" name="state" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" placeholder="Dhaka" />
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">City</label>
+                <input v-model="form.city" type="text" autocomplete="address-level2" name="city" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" placeholder="Dhaka" />
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Postal Code</label>
@@ -247,6 +323,7 @@ async function placeOrder() {
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Country</label>
                 <input v-model="form.country" type="text" autocomplete="country-name" name="country" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" />
               </div>
+              -->
             </div>
             <div class="mt-6 pt-6 border-t border-gray-100">
               <label class="block text-sm font-semibold text-gray-700 mb-1.5">Order Notes (optional)</label>
@@ -295,8 +372,8 @@ async function placeOrder() {
                 <span class="font-semibold">{{ formatPrice(subtotal) }}</span>
               </div>
               <div class="flex justify-between text-gray-600">
-                <span>Shipping</span>
-                <span class="font-semibold">{{ shipping.value === 0 ? 'Free' : formatPrice(shipping) }}</span>
+                <span>Shipping{{ selectedDistrict ? ' (' + selectedDistrict + ')' : '' }}</span>
+                <span class="font-semibold">{{ shipping === 0 ? 'Free' : formatPrice(shipping) }}</span>
               </div>
               <div class="flex justify-between text-gray-600">
                 <span>Tax ({{ taxRate.value }}%)</span>

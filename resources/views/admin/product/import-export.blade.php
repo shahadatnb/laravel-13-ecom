@@ -29,15 +29,15 @@
                 <form action="{{ route('admin.product.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
                     @csrf
                     <div class="form-group">
-                        <label for="csv_file">Select CSV File <span class="text-danger">*</span></label>
+                        <label for="csv_file">Select File <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <div class="custom-file">
                                 <input type="file" class="custom-file-input @error('csv_file') is-invalid @enderror"
-                                       id="csv_file" name="csv_file" accept=".csv,.txt" required>
-                                <label class="custom-file-label" for="csv_file">Choose CSV file...</label>
+                                       id="csv_file" name="csv_file" accept=".csv,.txt,.xlsx,.xls" required>
+                                <label class="custom-file-label" for="csv_file">Choose file...</label>
                             </div>
                         </div>
-                        <small class="form-text text-muted">Max file size: 10MB. Supported formats: .csv, .txt</small>
+                        <small class="form-text text-muted">Max 20 MB. Supported formats: .csv, .txt, .xlsx, .xls</small>
                     </div>
 
                     <div class="callout callout-info">
@@ -46,7 +46,7 @@
                             <li>Products are matched by <strong>SKU</strong> or <strong>Name</strong> — matching products will be updated.</li>
                             <li>New brands and categories are created automatically if they don't exist.</li>
                             <li>The import is wrapped in a transaction — any error rolls back all changes.</li>
-                            <li>Download the <a href="{{ route('admin.product.template') }}">template file</a> to see the expected format.</li>
+                            <li>Download the <a href="{{ route('admin.product.template') }}">CSV template</a> or <a href="{{ route('admin.product.template-xlsx') }}">XLSX template</a> to see the expected format.</li>
                         </ul>
                     </div>
 
@@ -65,7 +65,7 @@
                 <h3 class="card-title"><i class="fas fa-file-export mr-1"></i> Export Products</h3>
             </div>
             <div class="card-body">
-                <form action="{{ route('admin.product.export') }}" method="GET">
+                <form id="exportForm">
                     <div class="form-group">
                         <label>Brand</label>
                         <select name="brand_id" class="form-control form-control-sm">
@@ -102,26 +102,34 @@
                         <span class="text-muted">
                             <i class="fas fa-box mr-1"></i> {{ number_format($totalProducts) }} products total
                         </span>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-download mr-1"></i> Export CSV
-                        </button>
+                        <div>
+                            <button type="button" class="btn btn-success btn-sm" onclick="submitExport('xlsx')">
+                                <i class="fas fa-file-excel mr-1"></i> Download XLSX
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="submitExport('csv')">
+                                <i class="fas fa-file-csv mr-1"></i> Download CSV
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        {{-- Template Download --}}
+        {{-- Template Downloads --}}
         <div class="card card-outline card-secondary">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-file-csv mr-1"></i> Import Template</h3>
+                <h3 class="card-title"><i class="fas fa-file-alt mr-1"></i> Import Templates</h3>
             </div>
             <div class="card-body">
                 <p class="text-muted" style="font-size: 13px;">
-                    Download a sample CSV template with the correct column headers and one example row.
-                    Fill in your product data and upload it using the import form above.
+                    Download a sample template with correct column headers and one example row.
+                    Fill in your product data and upload using the import form above.
                 </p>
-                <a href="{{ route('admin.product.template') }}" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-download mr-1"></i> Download Template
+                <a href="{{ route('admin.product.template-xlsx') }}" class="btn btn-secondary btn-sm mr-1">
+                    <i class="fas fa-file-excel mr-1"></i> Template XLSX
+                </a>
+                <a href="{{ route('admin.product.template') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-file-csv mr-1"></i> Template CSV
                 </a>
             </div>
         </div>
@@ -141,6 +149,18 @@
 
 @push('scripts')
 <script>
+function submitExport(format) {
+    var form = document.getElementById('exportForm');
+    var params = new URLSearchParams(new FormData(form));
+    var url;
+    if (format === 'xlsx') {
+        url = '{{ route("admin.product.export-xlsx") }}?' + params.toString();
+    } else {
+        url = '{{ route("admin.product.export") }}?' + params.toString();
+    }
+    window.location.href = url;
+}
+
 document.getElementById('importForm').addEventListener('submit', function() {
     document.getElementById('importProgress').classList.remove('d-none');
     document.getElementById('importBtn').disabled = true;

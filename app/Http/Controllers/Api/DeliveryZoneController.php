@@ -29,7 +29,7 @@ class DeliveryZoneController extends Controller
                     'districts' => $zone->districts->where('status', 'active')->pluck('name'),
                     'charge' => (float) $zone->charge,
                     'minimum_order_amount' => $zone->minimum_order_amount ? (float) $zone->minimum_order_amount : null,
-                    'formatted_charge' => '$'.number_format((float) $zone->charge, 2),
+                    'formatted_charge' => currency_symbol() . number_format((float) $zone->charge, 2),
                 ];
             }),
         ]);

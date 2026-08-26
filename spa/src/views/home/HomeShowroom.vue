@@ -147,10 +147,14 @@ onUnmounted(() => {
         </div>
 
         <div class="hero-frame">
-          <div v-if="heroProduct" class="frame-card">
+          <div v-if="(heroSlides[currentSlide] || {}).feature_image" class="frame-card">
+            <img :src="(heroSlides[currentSlide] || {}).feature_image" :alt="(heroSlides[currentSlide] || {}).title"
+              class="frame-img" width="600" height="600" />
+          </div>
+          <div v-else-if="heroProduct" class="frame-card">
             <img
-              v-if="heroProduct.images?.length > 0"
-              :src="getImageUrl(heroProduct.images[0].image)"
+              v-if="heroProduct.thumbnail || heroProduct.images?.length > 0"
+              :src="getImageUrl(heroProduct.thumbnail || heroProduct.images[0]?.image)"
               :alt="heroProduct.name"
               class="frame-img"
               width="600"
@@ -215,8 +219,8 @@ onUnmounted(() => {
             <span class="mono dim">{{ pad(i + 1) }}</span>
             <RouterLink :to="`/product/${product.slug}`" class="prod-main">
               <img
-                v-if="product.images?.length > 0"
-                :src="getImageUrl(product.images[0].image)"
+                v-if="product.thumbnail || product.images?.length > 0"
+                :src="getImageUrl(product.thumbnail || product.images[0]?.image)"
                 :alt="product.name"
                 class="prod-thumb"
                 width="72"
@@ -270,8 +274,8 @@ onUnmounted(() => {
           <RouterLink v-for="(product, i) in newArrivals" :key="product.id" :to="`/product/${product.slug}`" class="arrive">
             <div class="arrive-img">
               <img
-                v-if="product.images?.length > 0"
-                :src="getImageUrl(product.images[0].image)"
+                v-if="product.thumbnail || product.images?.length > 0"
+                :src="getImageUrl(product.thumbnail || product.images[0]?.image)"
                 :alt="product.name"
                 loading="lazy"
                 width="400"

@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 import path from 'path'
 
 export default defineConfig({
+  root: path.resolve(__dirname, './spa'),
   plugins: [
     vue()
   ],
@@ -22,7 +23,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://laravel-13-sawf.test',
+        target: 'http://laravel-13-ecom.test',
         changeOrigin: true
       }
     }
@@ -30,9 +31,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, './public/build'),
     emptyOutDir: false,
-    manifest: true,
+    manifest: 'manifest.json',
     rollupOptions: {
-      input: 'spa/src/main.js'
+      input: 'src/main.js'
     }
   }
 })

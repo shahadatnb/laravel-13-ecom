@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use MaatwebsitexcelFacadesxcel;
 use Illuminate\View\View;
 
 class ProductImportExportController extends Controller
@@ -79,6 +80,19 @@ class ProductImportExportController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+
+    public function exportXlsx(Request $request)
+    {
+        $brandId = $request->filled('brand_id') ? (int) $request->brand_id : null;
+        $categoryId = $request->filled('category_id') ? (int) $request->category_id : null;
+        $status = $request->get('status', '');
+
+        return Excel::download(
+            new \App\Exports\ProductExport($brandId, $categoryId, $status),
+            'products_export_' . now()->format('Y-m-d_His') . '.xlsx'
+        );
+    }
+
     public function template()
     {
         $headers = [
@@ -112,17 +126,76 @@ class ProductImportExportController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+
+    public function templateXlsx()
+    {
+        $templateData = [[
+            'Brand' => 'Samsung', 'Category' => 'Electronics',
+            'Name' => 'Galaxy S24 Ultra', 'Name (BN)' => '',
+            'SKU' => 'SAM-S24U-256', 'Barcode' => '8806091234567',
+            'Short Description' => 'Premium flagship smartphone',
+            'Description' => 'Samsung Galaxy S24 Ultra with 256GB storage',
+            'Regular Price' => 139999, 'Sale Price' => 129999,
+            'Wholesale Price' => '', 'Cost Price' => 110000,
+            'Stock' => 50, 'Minimum Stock' => 10,
+            'Maximum Order' => 5, 'Weight (kg)' => 0.23,
+            'Length (cm)' => 16.2, 'Width (cm)' => 7.9,
+            'Height (cm)' => 0.8, 'Tax Class' => 'standard',
+            'Shipping Class' => 'standard', 'Status' => 'published',
+            'Product Type' => 'simple', 'Featured' => 'Yes',
+            'Visibility' => 'public',
+        ]];
+
+        return Excel::download(new class($templateData) implements
+            \Maatwebsite\Excel\Concerns\FromCollection,
+            \Maatwebsite\Excel\Concerns\WithHeadings,
+            \Maatwebsite\Excel\Concerns\WithStyles
+        {
+            private $data;
+            public function __construct(array $data) { $this->data = $data; }
+            public function collection() { return collect($this->data); }
+            public function headings(): array { return \App\Exports\ProductExport::COLUMNS; }
+            public function styles(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): array
+            {
+                return [1 => [
+                    'font' => ['bold' => true, 'size' => 11],
+                    'fill' => ['fillType' => 'solid', 'color' => ['rgb' => 'D6EAF8']],
+                ]];
+            }
+        }, 'product_import_template.xlsx');
+    }
+
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+            'csv_file' => 'required|file|mimes:csv,txt,xlsx,xls|max:20480',
         ], [
             'csv_file.required' => 'Please select a CSV file to import.',
-            'csv_file.mimes' => 'The file must be a CSV or TXT file.',
-            'csv_file.max' => 'The file size must not exceed 10MB.',
+            'csv_file.mimes' => 'The file must be a CSV, TXT, XLSX, or XLS file.',
+            'csv_file.max' => 'The file size must not exceed 20MB.',
         ]);
 
         $file = $request->file('csv_file');
+        $ext = strtolower($file->getClientOriginalExtension());
+
+        // Handle Excel files via Maatwebsite/Excel
+        if (in_array($ext, ['xlsx', 'xls'])) {
+            $import = new \App\Imports\ProductImport();
+            Excel::import($import, $file);
+            $results = $import->getResults();
+
+            $summary = "Import complete: {$results['created']} created, {$results['updated']} updated, {$results['skipped']} skipped.";
+            if (!empty($results['errors'])) {
+                $summary .= ' Errors: ' . implode(' | ', array_slice($results['errors'], 0, 10));
+                if (count($results['errors']) > 10) {
+                    $summary .= ' ... and ' . (count($results['errors']) - 10) . ' more.';
+                }
+            }
+
+            return back()->with('import_success', $summary);
+        }
+
+        // Handle CSV/TXT files natively
         $handle = fopen($file->getRealPath(), 'r');
 
         if ($handle === false) {

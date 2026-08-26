@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useSiteStore } from '@/stores/site'
 import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
 import ProductService from '@/services/ProductService'
+import { getImageUrl } from '@/utils/image'
 
 const siteStore = useSiteStore()
 const categoryStore = useCategoryStore()
@@ -44,47 +45,95 @@ function calcDiscount(regular, sale) {
 
 function goToProduct(slug) { router.push({ name: 'product.show', params: { slug } }) }
 function goToCategory(slug) { router.push({ name: 'category.show', params: { slug } }) }
+
+const heroSlides = computed(() => {
+  const slides = siteStore.slides
+  if (slides.length > 0) {
+    return slides.map(s => ({
+      title: s.title,
+      subtitle: s.subtitle,
+      cta: s.cta_text || 'Shop the Sale',
+      link: s.cta_link || '/products',
+      badge: s.badge_text || 'MEGA SALE LIVE NOW',
+    }))
+  }
+  return [{
+    title: 'Save Big on Top Brands',
+    subtitle: 'Massive discounts on electronics, fashion, and more. Limited stocks available — grab before they\'re gone!',
+    cta: 'Shop the Sale',
+    link: '/products',
+    badge: 'MEGA SALE LIVE NOW',
+  }]
+})
+
+const currentSlide = ref(0)
+let slideInterval = null
+
+onMounted(() => {
+  slideInterval = setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % heroSlides.value.length
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (slideInterval) clearInterval(slideInterval)
+})
 </script>
 
 <template>
   <div>
     <!-- Hero: Bold deals-focused -->
     <section class="relative bg-gradient-to-br from-red-600 via-red-700 to-orange-700 overflow-hidden">
-      <div class="absolute inset-0 opacity-20">
+      <!-- Background Image (if set) -->
+      <template v-for="(slide, index) in heroSlides" :key="index">
+        <div v-show="index === currentSlide && slide.bg_image"
+          class="absolute inset-0 bg-cover bg-center" :style="{ backgroundImage: `url(${slide.bg_image})` }">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+      </template>
+      <div v-if="!heroSlides[currentSlide]?.bg_image" class="absolute inset-0 opacity-20">
         <div class="absolute -top-20 -right-20 w-96 h-96 bg-yellow-400 rounded-full blur-[120px]"></div>
         <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-pink-400 rounded-full blur-[100px]"></div>
       </div>
-      <!-- Floating badges -->
-      <div class="absolute top-8 right-8 md:top-12 md:right-16 bg-yellow-400 text-red-900 font-black text-sm md:text-base px-5 py-2 rounded-full rotate-6 shadow-xl hidden sm:block">
-        🔥 HOT DEALS
-      </div>
-      <div class="absolute bottom-12 left-8 md:bottom-16 md:left-16 bg-white text-red-700 font-black text-xs md:text-sm px-4 py-1.5 rounded-full -rotate-3 shadow-lg hidden sm:block">
-        UP TO 50% OFF
-      </div>
 
       <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 relative z-10">
-        <div class="max-w-2xl">
-          <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white/90 text-sm font-bold px-4 py-1.5 rounded-full mb-6 border border-white/20">
-            <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-            MEGA SALE LIVE NOW
+        <div :class="heroSlides[currentSlide]?.feature_image ? 'flex items-center gap-12' : 'max-w-2xl'">
+          <div :class="heroSlides[currentSlide]?.feature_image ? 'flex-1' : ''">
+            <template v-for="(slide, index) in heroSlides" :key="index">
+              <div v-show="index === currentSlide">
+                <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white/90 text-sm font-bold px-4 py-1.5 rounded-full mb-6 border border-white/20">
+                  <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                  {{ slide.badge }}
+                </div>
+                <h1 class="text-4xl md:text-6xl font-black font-display text-white leading-tight mb-4">
+                  {{ slide.title }}
+                </h1>
+                <p class="text-lg text-white/80 mb-8 max-w-lg">
+                  {{ slide.subtitle }}
+                </p>
+                <div class="flex flex-wrap gap-4">
+                  <RouterLink :to="slide.link" class="btn bg-yellow-400 text-red-900 hover:bg-yellow-300 font-black px-8 py-3.5 shadow-xl shadow-yellow-400/30">
+                    {{ slide.cta }} →
+                  </RouterLink>
+                </div>
+              </div>
+            </template>
           </div>
-          <h1 class="text-4xl md:text-6xl font-black font-display text-white leading-tight mb-4">
-            Save Big on
-            <span class="text-yellow-300">Top Brands</span>
-          </h1>
-          <p class="text-lg text-white/80 mb-8 max-w-lg">
-            Massive discounts on electronics, fashion, and more. Limited stocks available — grab before they're gone!
-          </p>
-          <div class="flex flex-wrap gap-4">
-            <RouterLink :to="{ name: 'products.index' }" class="btn bg-yellow-400 text-red-900 hover:bg-yellow-300 font-black px-8 py-3.5 shadow-xl shadow-yellow-400/30">
-              Shop the Sale →
-            </RouterLink>
-            <RouterLink :to="{ name: 'categories.index' }" class="btn bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm border border-white/25 font-semibold">
-              Browse Categories
-            </RouterLink>
+          <template v-for="(slide, index) in heroSlides" :key="'img-'+index">
+            <div v-show="index === currentSlide && slide.feature_image" class="flex-1 hidden md:flex items-center justify-center">
+              <img :src="slide.feature_image" :alt="slide.title"
+                class="max-w-full h-auto rounded-2xl shadow-2xl" style="max-height:350px;object-fit:contain;" />
+            </div>
+          </template>
+        </div>
+          <div v-if="heroSlides.length > 1" class="flex gap-2 mt-8">
+            <button v-for="(_, i) in heroSlides" :key="i"
+              @click="currentSlide = i"
+              class="w-2.5 h-2.5 rounded-full transition-all duration-300"
+              :class="i === currentSlide ? 'bg-yellow-400 w-8' : 'bg-white/40 hover:bg-white/60'">
+            </button>
           </div>
         </div>
-      </div>
     </section>
 
     <!-- Urgency Strip -->
@@ -92,7 +141,7 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
       <div class="container mx-auto px-4 py-3 flex items-center justify-center gap-6 text-sm font-semibold overflow-hidden">
         <span class="flex items-center gap-2 whitespace-nowrap">
           <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-          FREE DELIVERY on ৳5,000+
+          FREE DELIVERY on {{ formatPrice(siteStore.getSetting('free_shipping_threshold', 5000)) }}+
         </span>
         <span class="text-red-400">|</span>
         <span class="flex items-center gap-2 whitespace-nowrap">⚡ Flash deals dropping daily</span>
@@ -159,12 +208,12 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
             @click="goToProduct(product.slug)"
             class="group cursor-pointer bg-white rounded-2xl border border-neutral-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
             <!-- Discount badge -->
-            <div v-if="product.discount_price"
+            <div v-if="product.sale_price"
               class="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded-lg shadow-md">
-              -{{ calcDiscount(product.regular_price || product.price, product.discount_price) }}%
+              -{{ calcDiscount(product.regular_price, product.sale_price) }}%
             </div>
             <div class="aspect-square bg-neutral-50 overflow-hidden">
-              <img v-if="product.thumbnail" :src="product.thumbnail" :alt="product.name"
+              <img v-if="product.thumbnail || product.images?.length" :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)" :alt="product.name"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-10 h-10 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -173,8 +222,8 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
             <div class="p-4">
               <h3 class="text-sm font-semibold text-neutral-800 line-clamp-2 mb-2 group-hover:text-red-600 transition-colors">{{ product.name }}</h3>
               <div class="flex items-baseline gap-2">
-                <span class="text-lg font-black text-red-600">{{ formatPrice(product.discount_price || product.price) }}</span>
-                <span v-if="product.discount_price" class="text-xs text-neutral-400 line-through">{{ formatPrice(product.regular_price || product.price) }}</span>
+                <span class="text-lg font-black text-red-600">{{ formatPrice(product.sale_price || product.regular_price) }}</span>
+                <span v-if="product.sale_price" class="text-xs text-neutral-400 line-through">{{ formatPrice(product.regular_price) }}</span>
               </div>
               <div class="flex items-center gap-1 mt-2">
                 <div class="flex text-yellow-400 text-xs">★★★★★</div>
@@ -232,7 +281,7 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
             @click="goToProduct(product.slug)"
             class="group cursor-pointer bg-white rounded-2xl border border-neutral-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             <div class="aspect-square bg-neutral-50 overflow-hidden relative">
-              <img v-if="product.thumbnail" :src="product.thumbnail" :alt="product.name"
+              <img v-if="product.thumbnail || product.images?.length" :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)" :alt="product.name"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-10 h-10 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -243,7 +292,7 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
             </div>
             <div class="p-4">
               <h3 class="text-sm font-semibold text-neutral-800 line-clamp-2 mb-2 group-hover:text-red-600 transition-colors">{{ product.name }}</h3>
-              <span class="text-lg font-black text-neutral-900">{{ formatPrice(product.discount_price || product.price) }}</span>
+              <span class="text-lg font-black text-neutral-900">{{ formatPrice(product.sale_price || product.regular_price) }}</span>
             </div>
           </div>
         </div>
@@ -256,7 +305,7 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"><span class="text-lg">🚚</span></div>
-            <div><p class="text-sm font-bold text-neutral-800">Free Shipping</p><p class="text-xs text-neutral-500">On ৳5,000+</p></div>
+            <div><p class="text-sm font-bold text-neutral-800">Free Shipping</p><p class="text-xs text-neutral-500">On {{ formatPrice(siteStore.getSetting('free_shipping_threshold', 5000)) }}+</p></div>
           </div>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0"><span class="text-lg">🔒</span></div>

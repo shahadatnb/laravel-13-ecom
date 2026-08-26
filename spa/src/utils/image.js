@@ -1,10 +1,10 @@
 /**
- * Convert an image path to a full absolute URL.
- * Image paths should be served from Laravel's /storage directory.
+ * Convert an image path to a URL served from Laravel's /storage directory.
+ * Returns a relative path so it works on any domain (localhost or production).
  *
  * @param {string|null} path - The image path (e.g. 'products/image.jpg', '/storage/products/image.jpg')
  * @param {string} fallback - Fallback image path if the given path is empty
- * @returns {string} Full absolute URL
+ * @returns {string} URL path
  */
 export function getImageUrl(path, fallback = '/assets/placeholder.svg') {
   // Use fallback if path is empty
@@ -23,7 +23,5 @@ export function getImageUrl(path, fallback = '/assets/placeholder.svg') {
     normalizedPath = `/storage${normalizedPath}`
   }
 
-  // Build full URL
-  const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin
-  return `${baseUrl}${normalizedPath}`
+  return normalizedPath
 }

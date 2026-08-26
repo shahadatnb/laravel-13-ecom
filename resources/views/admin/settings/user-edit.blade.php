@@ -45,7 +45,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="date_of_birth">Date of Birth</label>
-                                <input id="date_of_birth" type="date" name="date_of_birth" value="{{ old('date_of_birth', $user->date_of_birth) }}" class="form-control">
+                                <input id="date_of_birth" type="text" name="date_of_birth" value="{{ old('date_of_birth', $user->date_of_birth ? \Carbon\Carbon::parse($user->date_of_birth)->format('d-m-Y') : '') }}" class="form-control datepicker" placeholder="dd-mm-yyyy" autocomplete="off">
                                 @error('date_of_birth')<span class="text-danger">{{ $message }}</span>@enderror
                             </div>
                             <div class="form-group">
@@ -93,12 +93,24 @@
 </section>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('assets/admin/plugins/jquery-ui/jquery-ui.css') }}">
+@endpush
+
 @section('js')
+<script src="{{ asset('assets/admin/plugins/jquery-ui/jquery-ui.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     if ($.fn.select2) {
         $('.js-select2').select2({ placeholder: 'Select...', allowClear: true });
     }
+    $('.datepicker').datepicker({
+        dateFormat: 'dd-mm-yy',
+        changeMonth: true,
+        changeYear: true,
+        yearRange: '-100:+0',
+        maxDate: new Date(),
+    });
 });
 </script>
 @endsection

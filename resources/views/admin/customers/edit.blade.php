@@ -141,7 +141,7 @@
 $(function() {
     $('.datepicker').datepicker({
         dateFormat: 'dd-mm-yy',
-        yearRange: '-120:0',
+        yearRange: '-120:+0',
         maxDate: new Date(),
         changeMonth: true,
         changeYear: true

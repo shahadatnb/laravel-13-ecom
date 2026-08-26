@@ -38,7 +38,7 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     <!-- Vite SPA via Laravel Vite helper -->
-    @vite(['spa/src/main.js'])
+    @vite(['src/main.js'])
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <div id="app"></div>

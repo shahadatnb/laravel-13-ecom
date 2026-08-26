@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCategoryStore } from '@/stores/category'
 import { useSiteStore } from '@/stores/site'
+import { initCurrencySettings, formatPrice } from '@/utils/currency'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,7 +18,12 @@ onMounted(() => {
   if (!siteStore.settings.site_name) {
     siteStore.fetchSiteData()
   }
+  initCurrencySettings(siteStore.settings)
 })
+
+watch(() => siteStore.settings, (newSettings) => {
+  initCurrencySettings(newSettings)
+}, { deep: true })
 
 const mobileMenuOpen = ref(false)
 const searchQuery = ref('')
@@ -38,7 +44,7 @@ async function handleLogout() {
   <div class="min-h-screen flex flex-col">
     <!-- Top Announcement Bar -->
     <div class="bg-neutral-900 text-neutral-300 text-sm">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
+      <div class="w-full px-4 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
         <div class="flex items-center space-x-4">
           <span class="inline-flex items-center gap-1.5 hover:text-white transition-colors">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
@@ -52,15 +58,14 @@ async function handleLogout() {
         <div class="flex items-center space-x-3 text-xs">
           <span class="hidden md:inline-flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-            Free shipping on orders over ৳5000
+            Free shipping on orders over {{ formatPrice(siteStore.getSetting('free_shipping_threshold', 5000)) }}
           </span>
         </div>
       </div>
     </div>
 
     <!-- Main Header -->
-    <header class="bg-white/80 backdrop-blur-lg border-b border-neutral-100 sticky top-0 z-50">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <header class="bg-white/80 backdrop-blur-lg border-b border-neutral-100 sticky top-0 z-50">        <div class="w-full px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 lg:h-20">
           <!-- Mobile Menu Button -->
           <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden p-2 rounded-xl hover:bg-neutral-100 transition-colors">
@@ -70,7 +75,8 @@ async function handleLogout() {
 
           <!-- Logo -->
           <RouterLink :to="{ name: 'home' }" class="flex items-center gap-2">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20">
+            <img v-if="siteStore.getSetting('logo')" :src="siteStore.getSetting('logo')" :alt="siteStore.getSetting('site_name', 'Store')" class="h-9 w-auto rounded-xl object-contain" />
+            <div v-else class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20">
               <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
             </div>
             <span class="text-xl font-bold font-display text-neutral-900 hidden sm:block">
@@ -122,9 +128,9 @@ async function handleLogout() {
             <!-- Cart -->
             <RouterLink :to="{ name: 'cart.index' }" class="p-2 rounded-xl hover:bg-neutral-100 transition-colors relative">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-              <span v-if="cartStore.totalItems > 0"
+              <span v-if="cartStore.itemCount > 0"
                 class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-accent-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                {{ cartStore.totalItems }}
+                {{ cartStore.itemCount }}
               </span>
             </RouterLink>
 
@@ -156,7 +162,7 @@ async function handleLogout() {
         leave-to-class="opacity-0 -translate-y-1"
       >
         <div v-if="mobileMenuOpen" class="lg:hidden border-t border-neutral-100 bg-white">
-          <div class="container mx-auto px-4 py-4 space-y-1">
+          <div class="w-full px-4 py-4 space-y-1">
             <form @submit.prevent="handleSearch" class="mb-3">
               <input v-model="searchQuery" type="text" placeholder="Search products..." class="input text-sm" />
             </form>
@@ -186,11 +192,12 @@ async function handleLogout() {
 
     <!-- Footer -->
     <footer class="bg-neutral-900 text-neutral-400 mt-16">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div class="md:col-span-1">
             <div class="flex items-center gap-2 mb-4">
-              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+              <img v-if="siteStore.getSetting('logo')" :src="siteStore.getSetting('logo')" :alt="siteStore.getSetting('site_name', 'Store')" class="h-8 w-auto rounded-lg object-contain" />
+              <div v-else class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
               </div>
               <span class="text-lg font-bold font-display text-white">{{ siteStore.getSetting('site_name', 'Store') }}</span>

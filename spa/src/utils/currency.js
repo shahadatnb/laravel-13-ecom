@@ -2,8 +2,8 @@
 // This will be used with site settings from the API
 
 let currencySettings = {
-  symbol: '$',
-  code: 'USD',
+  symbol: '৳',
+  code: 'BDT',
   position: 'before',
   decimals: 2,
   thousandSeparator: ',',
@@ -16,8 +16,8 @@ let currencySettings = {
  */
 export function initCurrencySettings(settings) {
   if (settings) {
-    currencySettings.symbol = settings.currency_symbol || '$'
-    currencySettings.code = settings.currency_code || 'USD'
+    currencySettings.symbol = settings.currency_symbol || '৳'
+    currencySettings.code = settings.currency_code || 'BDT'
     currencySettings.position = settings.currency_position || 'before'
     currencySettings.decimals = parseInt(settings.currency_decimals) || 2
     currencySettings.thousandSeparator = settings.currency_thousand_separator || ','

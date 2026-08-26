@@ -28,10 +28,12 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   const subtotal = computed(() => {
-    return items.value.reduce((total, item) => total + (item.price * item.quantity), 0)
+    return items.value.reduce((total, item) => total + ((item.price || 0) * item.quantity), 0)
   })
 
   function addItem(product, quantity = 1) {
+    // Resolve price from various field names (price, sale_price, regular_price)
+    const price = product.price || product.sale_price || product.regular_price || 0
     // Compare both product ID and variant ID for duplicate detection
     const existingItem = items.value.find(
       item => item.id === product.id && (item.variant_id ?? null) === (product.variant_id ?? null)
@@ -45,7 +47,7 @@ export const useCartStore = defineStore('cart', () => {
         variant_name: product.variant_name || null,
         variant_sku: product.variant_sku || null,
         name: product.name,
-        price: product.price,
+        price: price,
         image: product.image,
         sku: product.sku || null,
         quantity: quantity

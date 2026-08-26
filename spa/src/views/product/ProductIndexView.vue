@@ -42,6 +42,10 @@ function getEffectivePrice(product) {
   return product.sale_price || product.regular_price
 }
 
+function goToProduct(slug) {
+  router.push({ name: 'product.show', params: { slug } })
+}
+
 onMounted(async () => {
   await fetchProducts()
 })
@@ -186,8 +190,8 @@ function isVariableProduct(product) {
                 </button>
                 <!-- Product Image -->
                 <img
-                  v-if="product.images?.length > 0"
-                  :src="getImageUrl(product.images[0].image)"
+                  v-if="product.thumbnail || product.images?.length > 0"
+                  :src="getImageUrl(product.thumbnail || product.images[0]?.image)"
                   :alt="product.name"
                   width="400"
                   height="400"
@@ -218,12 +222,12 @@ function isVariableProduct(product) {
                     {{ formatPrice(getEffectivePrice(product)) }}
                   </span>
                   <template v-if="isVariableProduct(product)">
-                    <button @click="addToCart(product)" class="btn btn-primary btn-sm">
-                      Add to Cart
+                    <button @click="goToProduct(product.slug)" class="btn btn-primary btn-sm !px-2.5" title="View Options">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
                   </template>
-                  <button v-else @click="addToCart(product)" class="btn btn-primary btn-sm">
-                    Add to Cart
+                  <button v-else @click="addToCart(product)" class="btn btn-primary btn-sm !px-2.5" title="Add to Cart">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
                   </button>
                 </div>
               </div>

@@ -64,6 +64,9 @@
         <a href="{{ route('admin.stock.index') }}" class="btn btn-sm {{ empty($stockStatus) ? 'btn-dark' : 'btn-outline-dark' }}">
           <i class="fas fa-list mr-1"></i> All
         </a>
+        <a href="{{ route('admin.stock.bulk-adjust-form') }}" class="btn btn-sm btn-warning mr-1" title="Bulk Adjust Stock">
+            <i class="fas fa-layer-group mr-1"></i> Bulk Adjust
+        </a>
         <a href="{{ route('admin.stock.index', array_merge($qs, ['stock_status' => 'simple'])) }}" class="btn btn-sm {{ $stockStatus === 'simple' ? 'btn-primary' : 'btn-outline-primary' }}">
           <i class="fas fa-cube mr-1"></i> Simple Only
         </a>

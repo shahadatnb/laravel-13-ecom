@@ -1,8 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSiteStore } from '@/stores/site'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, from, savedPosition) {
+    // Restore scroll position when navigating back/forward
+    if (savedPosition) {
+      return savedPosition
+    }
+    // Scroll to hash anchor if present
+    if (to.hash) {
+      return { el: to.hash, behavior: 'smooth' }
+    }
+    // Scroll to top on every normal navigation
+    return { top: 0, behavior: 'smooth' }
+  },
   routes: [
     // Public routes
     {
@@ -160,7 +173,9 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title ? `${to.meta.title} - E-Commerce` : 'E-Commerce'
+  const siteStore = useSiteStore()
+  const siteName = siteStore.getSetting('site_name') || 'E-Commerce'
+  document.title = to.meta.title ? `${to.meta.title} - ${siteName}` : siteName
 
   const authStore = useAuthStore()
 

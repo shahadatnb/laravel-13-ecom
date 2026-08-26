@@ -69,6 +69,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('product', ProductController::class);
 
         // Product Import / Export
+        // XLSX export/template routes
+        Route::get('product/export-xlsx', [ProductImportExportController::class, 'exportXlsx'])->name('product.export-xlsx');
+        Route::get('product/template-xlsx', [ProductImportExportController::class, 'templateXlsx'])->name('product.template-xlsx');
         Route::get('product/import-export', [ProductImportExportController::class, 'index'])->name('product.import-export');
         Route::get('product/export', [ProductImportExportController::class, 'export'])->name('product.export');
         Route::post('product/import', [ProductImportExportController::class, 'import'])->name('product.import');
@@ -114,6 +117,10 @@ Route::middleware('auth')->group(function () {
 
         // Stock management for variants
         Route::prefix('stock')->name('stock.')->group(function () {
+            // Bulk stock adjustment
+            Route::get('bulk-adjust', [StockController::class, 'bulkAdjustForm'])->name('bulk-adjust-form');
+            Route::post('bulk-adjust', [StockController::class, 'bulkAdjust'])->name('bulk-adjust');
+
             Route::get('/', [StockController::class, 'index'])->name('index');
             Route::get('/{product}/stock-in', [StockController::class, 'stockInForm'])->name('stock-in-form');
             Route::post('/{product}/stock-in', [StockController::class, 'stockIn'])->name('stock-in');
@@ -197,6 +204,11 @@ Route::middleware('auth')->group(function () {
             // Site Settings
             Route::get('/site-settings', [SiteSettingController::class, 'siteSettings'])->name('site-settings');
             Route::post('/site-settings', [SiteSettingController::class, 'updateSiteSettings'])->name('site-settings.update');
+            // Feature Items
+            Route::get('/feature-items', [SiteSettingController::class, 'featureItems'])->name('feature-items');
+            Route::post('/feature-items', [SiteSettingController::class, 'storeFeatureItem'])->name('feature-items.store');
+            Route::put('/feature-items/{index}', [SiteSettingController::class, 'updateFeatureItem'])->name('feature-items.update');
+            Route::delete('/feature-items/{index}', [SiteSettingController::class, 'destroyFeatureItem'])->name('feature-items.destroy');
         });
     });
 });

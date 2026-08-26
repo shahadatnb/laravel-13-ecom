@@ -32,7 +32,7 @@ class OrderResource extends JsonResource
             'coupon_discount' => (float) $this->coupon_discount,
             'notes' => $this->notes,
             'admin_notes' => $this->admin_notes,
-            'customer' => $this->when($this->relationLoaded('customer'), function () {
+            'customer' => $this->when($this->relationLoaded('customer') && $this->customer !== null, function () {
                 return [
                     'id' => $this->customer->id,
                     'name' => $this->customer->name,

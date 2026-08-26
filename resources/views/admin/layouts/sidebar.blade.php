@@ -178,6 +178,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('admin.settings.feature-items') }}" class="nav-link {{ request()->routeIs('admin.settings.feature-items*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-star"></i>
+                                <p>Feature Items</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('admin.settings.site-settings') }}" class="nav-link {{ request()->routeIs('admin.settings.site-settings*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-globe"></i>
                                 <p>Site Settings</p>

@@ -45,10 +45,10 @@
                                 @elseif($coupon->isFreeShipping())
                                     <span class="font-weight-bold text-info">Free Shipping</span>
                                 @else
-                                    <span class="font-weight-bold text-success h5">{{ number_format($coupon->discount_value, 2) }} BDT</span>
+                                    <span class="font-weight-bold text-success h5">{{ format_currency($coupon->discount_value, 2) }}</span>
                                 @endif
                                 @if($coupon->max_discount)
-                                    <br><small class="text-muted">Max discount: {{ number_format($coupon->max_discount, 2) }} BDT</small>
+                                    <br><small class="text-muted">Max discount: {{ format_currency($coupon->max_discount, 2) }}</small>
                                 @endif
                             </td>
                         </tr>
@@ -115,7 +115,7 @@
                     <div class="col-md-4 mt-3">
                         <div class="text-center p-3 border rounded bg-light">
                             <div class="text-muted text-sm">Min Order Amount</div>
-                            <div class="font-weight-bold">{{ $coupon->min_order_amount ? number_format($coupon->min_order_amount, 2).' BDT' : '—' }}</div>
+                            <div class="font-weight-bold">{{ $coupon->min_order_amount ? format_currency($coupon->min_order_amount, 2) : '—' }}</div>
                         </div>
                     </div>
                     <div class="col-md-4 mt-3">

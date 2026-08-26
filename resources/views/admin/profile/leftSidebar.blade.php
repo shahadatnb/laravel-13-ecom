@@ -23,7 +23,7 @@
             <p class="text-muted">{{ Auth::user()->address ?? 'N/A' }}</p>
             <hr>
             <strong><i class="fas fa-calendar mr-1"></i> Date of Birth</strong>
-            <p class="text-muted">{{ Auth::user()->date_of_birth?->format('Y-m-d') ?? 'N/A' }}</p>
+            <p class="text-muted">{{ Auth::user()->date_of_birth ? \Carbon\Carbon::parse(Auth::user()->date_of_birth)->format('d-m-Y') : 'N/A' }}</p>
             <hr>
             <strong><i class="fas fa-venus-mars mr-1"></i> Gender</strong>
             <p class="text-muted">{{ ucfirst(Auth::user()->gender ?? 'N/A') }}</p>

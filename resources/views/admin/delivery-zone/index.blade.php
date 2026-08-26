@@ -48,10 +48,10 @@
                                         <span class="text-muted">No districts</span>
                                     @endif
                                 </td>
-                                <td>${{ number_format($zone->charge, 2) }}</td>
+                                <td>{{ format_currency($zone->charge, 2) }}</td>
                                 <td>
                                     @if($zone->minimum_order_amount)
-                                        ${{ number_format($zone->minimum_order_amount, 2) }}
+                                        {{ format_currency($zone->minimum_order_amount, 2) }}
                                         <small class="text-muted d-block" style="font-size:10px;">(Free above)</small>
                                     @else
                                         <span class="text-muted">—</span>

@@ -149,6 +149,18 @@ class InventoryRepository implements InventoryRepositoryInterface
             };
         }
 
+        // Variant attribute filtering (JSON_EXTRACT)
+        if (!empty($filters['attr_name']) && !empty($filters['attr_value'])) {
+            $attrName = $filters['attr_name'];
+            $attrValue = $filters['attr_value'];
+            $query->whereHas('variant', function ($q) use ($attrName, $attrValue) {
+                $q->whereRaw(
+                    "JSON_EXTRACT(attributes, ?) = ?",
+                    ["$.\"{$attrName}\"", json_encode($attrValue)]
+                );
+            });
+        }
+
         $sortField = $filters['sort'] ?? 'current_stock';
         $sortDir = $filters['sort_direction'] ?? 'desc';
         $query->orderBy($sortField, $sortDir);

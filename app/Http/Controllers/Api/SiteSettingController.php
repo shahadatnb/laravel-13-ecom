@@ -22,7 +22,10 @@ class SiteSettingController extends Controller
                 'cta_text' => $slide->cta_text,
                 'cta_link' => $slide->cta_link,
                 'bg_gradient' => $slide->bg_gradient,
+                'bg_image' => $slide->bg_image ? asset('storage/' . $slide->bg_image) : null,
                 'image_emoji' => $slide->image_emoji,
+                'feature_image' => $slide->feature_image ? asset('storage/' . $slide->feature_image) : null,
+                'image_position' => $slide->image_position ?? 'right',
                 'badge_text' => $slide->badge_text,
             ];
         });

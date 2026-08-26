@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useSiteStore } from '@/stores/site'
 import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
 import ProductService from '@/services/ProductService'
+import { getImageUrl } from '@/utils/image'
 
 const siteStore = useSiteStore()
 const categoryStore = useCategoryStore()
@@ -39,28 +40,80 @@ function formatPrice(price) {
 
 function goToProduct(slug) { router.push({ name: 'product.show', params: { slug } }) }
 function goToCategory(slug) { router.push({ name: 'category.show', params: { slug } }) }
+
+const heroSlides = computed(() => {
+  const slides = siteStore.slides
+  if (slides.length > 0) {
+    return slides.map(s => ({
+      title: s.title || siteStore.getSetting('site_name', 'Store'),
+      subtitle: s.subtitle || 'Curated products for modern living. Simple, beautiful, and made to last.',
+      cta: s.cta_text || 'Explore Collection',
+      link: s.cta_link || '/products',
+    }))
+  }
+  return [{
+    title: siteStore.getSetting('site_name', 'Store'),
+    subtitle: 'Curated products for modern living. Simple, beautiful, and made to last.',
+    cta: 'Explore Collection',
+    link: '/products',
+  }]
+})
+
+const currentSlide = ref(0)
+let slideInterval = null
+
+onMounted(() => {
+  slideInterval = setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % heroSlides.value.length
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (slideInterval) clearInterval(slideInterval)
+})
 </script>
 
 <template>
   <div>
     <!-- Hero: Ultra-clean minimal -->
-    <section class="relative bg-white">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
-        <div class="max-w-3xl">
-          <p class="text-sm font-semibold tracking-[0.2em] uppercase text-primary-600 mb-6">Welcome to</p>
-          <h1 class="text-5xl md:text-7xl font-bold font-display text-neutral-900 leading-[1.05] mb-6">
-            {{ siteStore.getSetting('site_name', 'Store') }}
-          </h1>
-          <p class="text-xl text-neutral-500 leading-relaxed mb-10 max-w-xl">
-            Curated products for modern living. Simple, beautiful, and made to last.
-          </p>
-          <div class="flex flex-wrap gap-4">
-            <RouterLink :to="{ name: 'products.index' }" class="btn bg-neutral-900 text-white hover:bg-neutral-800 px-8 py-3.5 text-sm font-semibold tracking-wide">
-              Explore Collection
-            </RouterLink>
-            <RouterLink :to="{ name: 'categories.index' }" class="btn border-2 border-neutral-200 text-neutral-700 hover:border-neutral-400 px-8 py-3.5 text-sm font-semibold tracking-wide">
-              Categories
-            </RouterLink>
+    <section class="relative" :class="heroSlides[currentSlide]?.bg_image ? '' : 'bg-white'">
+      <!-- Background Image (if set) -->
+      <template v-for="(slide, index) in heroSlides" :key="index">
+        <div v-show="index === currentSlide && slide.bg_image"
+          class="absolute inset-0 bg-cover bg-center" :style="{ backgroundImage: `url(${slide.bg_image})` }">
+          <div class="absolute inset-0 bg-black/30"></div>
+        </div>
+      </template>
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 relative z-10">
+        <div :class="heroSlides[currentSlide]?.feature_image ? 'max-w-5xl' : 'max-w-3xl'">
+          <template v-for="(slide, index) in heroSlides" :key="index">
+            <div v-show="index === currentSlide" class="flex items-center gap-12">
+              <div class="flex-1">
+                <h1 :class="slide.bg_image ? 'text-5xl md:text-7xl font-bold font-display text-white leading-[1.05] mb-6' : 'text-5xl md:text-7xl font-bold font-display text-neutral-900 leading-[1.05] mb-6'">
+                  {{ slide.title }}
+                </h1>
+                <p :class="slide.bg_image ? 'text-xl text-white/80 leading-relaxed mb-10 max-w-xl' : 'text-xl text-neutral-500 leading-relaxed mb-10 max-w-xl'">
+                  {{ slide.subtitle }}
+                </p>
+                <div class="flex flex-wrap gap-4">
+                  <RouterLink :to="slide.link"
+                    :class="slide.bg_image ? 'btn bg-white text-neutral-900 hover:bg-neutral-100 px-8 py-3.5 text-sm font-semibold tracking-wide' : 'btn bg-neutral-900 text-white hover:bg-neutral-800 px-8 py-3.5 text-sm font-semibold tracking-wide'">
+                    {{ slide.cta }}
+                  </RouterLink>
+                </div>
+              </div>
+              <div v-if="slide.feature_image" class="flex-1 hidden md:flex items-center justify-center">
+                <img :src="slide.feature_image" :alt="slide.title"
+                  class="max-w-full h-auto rounded-2xl shadow-2xl" style="max-height:400px;object-fit:contain;" />
+              </div>
+            </div>
+          </template>
+          <div v-if="heroSlides.length > 1" class="flex gap-2 mt-8">
+            <button v-for="(_, i) in heroSlides" :key="i"
+              @click="currentSlide = i"
+              class="w-2 h-2 rounded-full transition-all duration-300"
+              :class="i === currentSlide ? 'bg-neutral-900 w-6' : 'bg-neutral-300 hover:bg-neutral-400'">
+            </button>
           </div>
         </div>
       </div>
@@ -114,19 +167,19 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
           <div v-for="product in featuredProducts.slice(0, 8)" :key="product.id"
             @click="goToProduct(product.slug)" class="group cursor-pointer">
             <div class="aspect-[3/4] bg-neutral-50 rounded-2xl overflow-hidden mb-4 relative">
-              <img v-if="product.thumbnail" :src="product.thumbnail" :alt="product.name"
+              <img v-if="product.thumbnail || product.images?.length" :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)" :alt="product.name"
                 class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-10 h-10 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               </div>
-              <div v-if="product.discount_price" class="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded-md">
+              <div v-if="product.sale_price" class="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded-md">
                 Sale
               </div>
             </div>
             <h3 class="text-sm font-medium text-neutral-700 group-hover:text-primary-700 transition-colors line-clamp-1 mb-1">{{ product.name }}</h3>
             <div class="flex items-baseline gap-2">
-              <span class="text-base font-bold text-neutral-900">{{ formatPrice(product.discount_price || product.price) }}</span>
-              <span v-if="product.discount_price" class="text-xs text-neutral-400 line-through">{{ formatPrice(product.price) }}</span>
+              <span class="text-base font-bold text-neutral-900">{{ formatPrice(product.sale_price || product.regular_price) }}</span>
+              <span v-if="product.sale_price" class="text-xs text-neutral-400 line-through">{{ formatPrice(product.regular_price) }}</span>
             </div>
           </div>
         </div>
@@ -165,14 +218,14 @@ function goToCategory(slug) { router.push({ name: 'category.show', params: { slu
           <div v-for="product in newProducts.slice(0, 8)" :key="product.id"
             @click="goToProduct(product.slug)" class="group cursor-pointer">
             <div class="aspect-[3/4] bg-neutral-50 rounded-2xl overflow-hidden mb-4 relative">
-              <img v-if="product.thumbnail" :src="product.thumbnail" :alt="product.name"
+              <img v-if="product.thumbnail || product.images?.length" :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)" :alt="product.name"
                 class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-10 h-10 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               </div>
             </div>
             <h3 class="text-sm font-medium text-neutral-700 group-hover:text-primary-700 transition-colors line-clamp-1 mb-1">{{ product.name }}</h3>
-            <span class="text-base font-bold text-neutral-900">{{ formatPrice(product.discount_price || product.price) }}</span>
+            <span class="text-base font-bold text-neutral-900">{{ formatPrice(product.sale_price || product.regular_price) }}</span>
           </div>
         </div>
       </div>

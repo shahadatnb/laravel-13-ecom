@@ -38,7 +38,7 @@
       <div class="card-body d-flex align-items-center justify-content-between">
         <div>
           <div class="stat-label">Total Revenue</div>
-          <div class="stat-value text-success">৳{{ number_format($stats['revenue']) }}</div>
+          <div class="stat-value text-success">{{ format_currency($stats['revenue']) }}</div>
           <div class="stat-change {{ $todayRevenueVsYesterday >= 0 ? 'up' : 'down' }}">
             <i class="fas fa-arrow-{{ $todayRevenueVsYesterday >= 0 ? 'up' : 'down' }}"></i>
             {{ abs($todayRevenueVsYesterday) }}% vs yesterday
@@ -93,7 +93,7 @@
         <div>
           <div class="stat-label">Today</div>
           <div class="stat-value" style="color: #6f42c1;">{{ $todayOrders }} orders</div>
-          <div class="stat-change neutral">৳{{ number_format($todayRevenue) }} revenue</div>
+          <div class="stat-change neutral">{{ format_currency($todayRevenue) }} revenue</div>
         </div>
         <div class="stat-icon" style="background: #e8daef; color: #6f42c1;">
           <i class="fas fa-calendar-day"></i>
@@ -219,7 +219,7 @@
               <td><span class="badge badge-{{ $i < 3 ? 'warning' : 'secondary' }}">{{ $i + 1 }}</span></td>
               <td class="text-truncate" style="max-width:250px;">{{ $product->name }}</td>
               <td class="text-right"><strong>{{ number_format($product->total_qty) }}</strong></td>
-              <td class="text-right text-success font-weight-bold">৳{{ number_format($product->total_revenue) }}</td>
+              <td class="text-right text-success font-weight-bold">{{ format_currency($product->total_revenue) }}</td>
             </tr>
             @endforeach
           </tbody>
@@ -286,7 +286,7 @@
             <tr>
               <td><a href="{{ route('admin.orders.show', $order) }}"><strong>{{ $order->order_number }}</strong></a></td>
               <td>{{ $order->customer->name ?? 'Guest' }}</td>
-              <td class="text-right font-weight-bold">৳{{ number_format($order->grand_total) }}</td>
+              <td class="text-right font-weight-bold">{{ format_currency($order->grand_total) }}</td>
               <td><span class="badge badge-{{ $sc[$order->status] ?? 'secondary' }}">{{ ucfirst($order->status) }}</span></td>
               <td><span class="badge badge-{{ $pc[$order->payment_status] ?? 'secondary' }}">{{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}</span></td>
               <td class="text-muted">{{ $order->created_at->format('d M, h:i A') }}</td>
@@ -315,7 +315,7 @@ $(function() {
       labels:{!! json_encode($revenueMonths) !!},
       datasets:[{label:'Revenue',data:{!! json_encode($revenueValues) !!},borderColor:g.bd,backgroundColor:g.bg,fill:true,tension:0.4,pointRadius:4,pointHoverRadius:7,borderWidth:2.5}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '৳'+c.parsed.y.toLocaleString()}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return '৳'+(v/1000).toFixed(0)+'k'}},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '{{ currency_symbol() }}'+c.parsed.y.toLocaleString()}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return '{{ currency_symbol() }}'+(v/1000).toFixed(0)+'k'}},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false}}}}
   });
 
   var osd={!! json_encode($orderStatusCounts) !!};var sl=Object.keys(osd),sv=Object.values(osd);

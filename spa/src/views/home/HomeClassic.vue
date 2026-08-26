@@ -118,6 +118,14 @@ function isVariableProduct(product) {
 }
 
 // Add to cart (respects quick-variant selection)
+function goToProduct(slug) {
+  router.push({ name: 'product.show', params: { slug } })
+}
+
+function goToCategory(slug) {
+  router.push({ name: 'category.show', params: { slug } })
+}
+
 function reloadPage() {
   window.location.reload()
 }
@@ -222,12 +230,16 @@ function getCategoryIcon(name) {
       >
         <div
           class="relative flex items-center min-h-[450px] md:min-h-[550px]"
-          :class="`bg-gradient-to-r ${slide.bg}`"
+          :class="slide.bg_image ? '' : `bg-gradient-to-r ${slide.bg}`"
         >
-          <!-- Decorative circles -->
-          <div class="absolute top-10 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl" aria-hidden="true"></div>
-          <div class="absolute bottom-10 right-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" aria-hidden="true"></div>
-          <div class="absolute top-1/2 right-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl" aria-hidden="true"></div>
+          <!-- Background Image -->
+          <div v-if="slide.bg_image" class="absolute inset-0 bg-cover bg-center" :style="{ backgroundImage: `url(${slide.bg_image})` }">
+            <div class="absolute inset-0 bg-black/40"></div>
+          </div>
+          <!-- Decorative circles (only when no bg image) -->
+          <div v-if="!slide.bg_image" class="absolute top-10 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl" aria-hidden="true"></div>
+          <div v-if="!slide.bg_image" class="absolute bottom-10 right-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" aria-hidden="true"></div>
+          <div v-if="!slide.bg_image" class="absolute top-1/2 right-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl" aria-hidden="true"></div>
 
           <div class="container mx-auto px-4 relative z-10">
             <div :key="'hero-' + index + '-' + currentSlide" class="grid md:grid-cols-2 gap-8 items-center">
@@ -264,7 +276,9 @@ function getCategoryIcon(name) {
                 </div>
               </div>
               <div class="hidden md:flex justify-center hero-animate hero-delay-5">
-                <span class="text-[200px] leading-none animate-bounce-slow">{{ slide.image }}</span>
+                <img v-if="slide.feature_image" :src="slide.feature_image" :alt="slide.title"
+                  class="max-w-full h-auto rounded-2xl shadow-2xl" style="max-height:350px;object-fit:contain;" />
+                <span v-else class="text-[200px] leading-none animate-bounce-slow">{{ slide.image }}</span>
               </div>
             </div>
           </div>
@@ -420,8 +434,8 @@ function getCategoryIcon(name) {
                 </div>
                 <!-- Product Image -->
                 <img
-                  v-if="product.images?.length > 0"
-                  :src="getImageUrl(product.images[0].image)"
+                  v-if="product.thumbnail || product.images?.length > 0"
+                  :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)"
                   :alt="product.name"
                   width="400"
                   height="400"
@@ -442,8 +456,9 @@ function getCategoryIcon(name) {
                   <button
                     v-else
                     @click.prevent="addToCart(product)"
-                    class="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-lg hover:bg-primary-600 hover:text-white"
+                    class="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-lg hover:bg-primary-600 hover:text-white inline-flex items-center"
                   >
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
                     Add to Cart
                   </button>
                 </div>
@@ -477,11 +492,11 @@ function getCategoryIcon(name) {
                   </div>
                   <template v-if="isVariableProduct(product)">
                     <button
-                      @click="addToCart(product)"
+                      @click="goToProduct(product.slug)"
                       class="w-9 h-9 bg-primary-600 hover:bg-primary-700 text-white rounded-xl flex items-center justify-center transition-all"
-                      title="Add selected variant to cart"
+                      title="View product options"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
                   </template>
                   <button
@@ -607,8 +622,8 @@ function getCategoryIcon(name) {
                   ✨ New
                 </div>
                 <!-- Product Image -->                  <img
-                    v-if="product.images?.length > 0"
-                    :src="getImageUrl(product.images[0].image)"
+                    v-if="product.thumbnail || product.images?.length > 0"
+                    :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)"
                     :alt="product.name"
                     width="400"
                     height="400"
@@ -628,8 +643,9 @@ function getCategoryIcon(name) {
                   <button
                     v-else
                     @click.prevent="addToCart(product)"
-                    class="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-lg hover:bg-primary-600 hover:text-white"
+                    class="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-lg hover:bg-primary-600 hover:text-white inline-flex items-center"
                   >
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
                     Add to Cart
                   </button>
                 </div>
@@ -662,11 +678,11 @@ function getCategoryIcon(name) {
                   </div>
                   <template v-if="isVariableProduct(product)">
                     <button
-                      @click="addToCart(product)"
+                      @click="goToProduct(product.slug)"
                       class="w-9 h-9 bg-primary-600 hover:bg-primary-700 text-white rounded-xl flex items-center justify-center transition-all"
-                      title="Add selected variant to cart"
+                      title="View product options"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
                   </template>
                   <button
