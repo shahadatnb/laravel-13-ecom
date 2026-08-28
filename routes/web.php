@@ -21,17 +21,17 @@ use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\EditorImageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 
-// Vue SPA - Catch all route for frontend
-Route::get('/', function () {
-    return view('app');
-})->name('spa.home');
+// Vue SPA - Routes with dynamic SEO meta tags
+Route::get('/', [SeoController::class, 'handle'])->name('spa.home');
+Route::get('/product/{slug}', [SeoController::class, 'handle'])->name('spa.product');
+Route::get('/category/{slug}', [SeoController::class, 'handle'])->name('spa.category');
+Route::get('/page/{slug}', [SeoController::class, 'handle'])->name('spa.page');
 
 // Vue SPA - Catch all for client-side routing
-Route::get('/{any}', function () {
-    return view('app');
-})->where('any', '^(?!admin|api).*$')->name('spa.catchall');
+Route::get('/{any}', [SeoController::class, 'handle'])->where('any', '^(?!admin|api).*$')->name('spa.catchall');
 
 Route::get('/home', function () {
     return redirect()->route('admin.dashboard');

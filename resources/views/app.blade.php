@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ \App\Models\SiteSetting::getValue('site_name', config('app.name', 'E-Commerce')) }}</title>
+    {{-- SEO: Title --}}
+    <title>{{ $seo['title'] ?? \App\Models\SiteSetting::getValue('site_name', config('app.name', 'E-Commerce')) }}</title>
 
-    <!-- Meta tags -->
-    <meta name="description" content="{{ \App\Models\SiteSetting::getValue('site_description', 'E-Commerce Platform') }}">
+    {{-- SEO: Description --}}
+    <meta name="description" content="{{ $seo['description'] ?? \App\Models\SiteSetting::getValue('site_description', 'E-Commerce Platform') }}">
 
-    <!-- Favicon -->
+    {{-- SEO: Keywords (if available) --}}
+    @isset($seo['keywords'])
+        <meta name="keywords" content="{{ $seo['keywords'] }}">
+    @endisset
+
+    {{-- Favicon --}}
     @php $favicon = \App\Models\SiteSetting::getValue('favicon'); @endphp
     @if($favicon)
         <link rel="icon" type="image/x-icon" href="{{ $favicon }}">
@@ -20,24 +26,34 @@
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @endif
 
-    <!-- Open Graph / Social Share -->
-    @php $ogImage = \App\Models\SiteSetting::getValue('og_image'); @endphp
-    <meta property="og:title" content="{{ \App\Models\SiteSetting::getValue('site_name', config('app.name', 'E-Commerce')) }}">
-    <meta property="og:description" content="{{ \App\Models\SiteSetting::getValue('site_description', 'E-Commerce Platform') }}">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url()->current() }}">
-    @if($ogImage)
-        <meta property="og:image" content="{{ $ogImage }}">
+    {{-- SEO: Open Graph / Social Share --}}
+    <meta property="og:title" content="{{ $seo['title'] ?? \App\Models\SiteSetting::getValue('site_name', config('app.name', 'E-Commerce')) }}">
+    <meta property="og:description" content="{{ $seo['description'] ?? \App\Models\SiteSetting::getValue('site_description', 'E-Commerce Platform') }}">
+    <meta property="og:type" content="{{ $seo['type'] ?? 'website' }}">
+    <meta property="og:url" content="{{ $seo['url'] ?? url()->current() }}">
+    <meta property="og:site_name" content="{{ \App\Models\SiteSetting::getValue('site_name', config('app.name', 'E-Commerce')) }}">
+    @if(!empty($seo['image']))
+        <meta property="og:image" content="{{ $seo['image'] }}">
         <meta property="og:image:width" content="1200">
         <meta property="og:image:height" content="630">
     @endif
-    <meta name="twitter:card" content="summary_large_image">
 
-    <!-- Fonts -->
+    {{-- SEO: Twitter Card --}}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seo['title'] ?? \App\Models\SiteSetting::getValue('site_name', config('app.name', 'E-Commerce')) }}">
+    <meta name="twitter:description" content="{{ $seo['description'] ?? \App\Models\SiteSetting::getValue('site_description', 'E-Commerce Platform') }}">
+    @if(!empty($seo['image']))
+        <meta name="twitter:image" content="{{ $seo['image'] }}">
+    @endif
+
+    {{-- SEO: Canonical URL --}}
+    <link rel="canonical" href="{{ $seo['url'] ?? url()->current() }}">
+
+    {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Vite SPA via Laravel Vite helper -->
+    {{-- Vite SPA --}}
     @vite(['src/main.js'])
 </head>
 <body class="font-sans antialiased bg-gray-50">
