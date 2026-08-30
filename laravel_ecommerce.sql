@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Aug 20, 2026 at 02:27 AM
+-- Generation Time: Aug 30, 2026 at 03:28 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.3.32
 
@@ -452,7 +452,10 @@ CREATE TABLE `hero_slides` (
   `cta_text` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Shop Now',
   `cta_link` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '/products',
   `bg_gradient` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'from-blue-600 via-blue-700 to-indigo-900',
+  `bg_image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `image_emoji` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '?',
+  `feature_image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image_position` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'right',
   `badge_text` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'Limited Time Offer',
   `sort_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -464,10 +467,10 @@ CREATE TABLE `hero_slides` (
 -- Dumping data for table `hero_slides`
 --
 
-INSERT INTO `hero_slides` (`id`, `title`, `subtitle`, `cta_text`, `cta_link`, `bg_gradient`, `image_emoji`, `badge_text`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'New Season Collection', 'Discover the latest trends with amazing prices', 'Shop Now', '/products', 'from-primary-700 via-primary-800 to-primary-900', '🛍️', 'New Arrivals', 1, 1, '2026-08-19 19:05:12', '2026-08-19 19:05:12'),
-(2, 'Mega Sale — Up to 40% Off', 'Limited time offer on selected electronics & accessories', 'View Deals', '/products', 'from-accent-600 via-accent-700 to-red-800', '🔥', 'Hot Deal', 2, 1, '2026-08-19 19:05:12', '2026-08-19 19:05:12'),
-(3, 'Premium Quality, Best Prices', 'Shop from top brands with guaranteed authenticity', 'Explore', '/categories', 'from-emerald-600 via-teal-700 to-cyan-800', '✨', 'Top Brands', 3, 1, '2026-08-19 19:05:12', '2026-08-19 19:05:12');
+INSERT INTO `hero_slides` (`id`, `title`, `subtitle`, `cta_text`, `cta_link`, `bg_gradient`, `bg_image`, `image_emoji`, `feature_image`, `image_position`, `badge_text`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'New Season Collection', 'Discover the latest trends with amazing prices', 'Shop Now', '/products', 'from-primary-700 via-primary-800 to-primary-900', NULL, '🛍️', 'hero-slides/JLWBUiwWj2gA4fNLbPnGAPhehSxu8i7lf7J0HHUa.jpg', 'right', 'New Arrivals', 1, 1, '2026-08-19 19:05:12', '2026-08-26 02:08:59'),
+(2, 'Mega Sale — Up to 40% Off', 'Limited time offer on selected electronics & accessories', 'View Deals', '/products', 'from-accent-600 via-accent-700 to-red-800', NULL, '🔥', NULL, 'right', 'Hot Deal', 2, 1, '2026-08-19 19:05:12', '2026-08-19 19:05:12'),
+(3, 'Premium Quality, Best Prices', 'Shop from top brands with guaranteed authenticity', 'Explore', '/categories', 'from-emerald-600 via-teal-700 to-cyan-800', NULL, '✨', NULL, 'right', 'Top Brands', 3, 1, '2026-08-19 19:05:12', '2026-08-19 19:05:12');
 
 -- --------------------------------------------------------
 
@@ -694,7 +697,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (49, '2026_07_29_100000_fix_existing_products_product_type', 1),
 (50, '2026_07_29_100001_add_guest_checkout_to_orders_table', 1),
 (51, '2026_07_29_100002_add_customer_id_to_orders_table', 1),
-(52, '2026_08_15_000002_add_active_theme_setting_to_site_settings', 1);
+(52, '2026_08_15_000002_add_active_theme_setting_to_site_settings', 1),
+(53, '2026_08_26_075712_add_images_to_hero_slides_table', 2);
 
 -- --------------------------------------------------------
 
@@ -764,6 +768,16 @@ CREATE TABLE `orders` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `customer_id`, `user_id`, `guest_email`, `order_number`, `subtotal`, `discount`, `tax`, `shipping_charge`, `grand_total`, `paid_amount`, `due_amount`, `currency`, `status`, `payment_status`, `payment_method`, `shipping_status`, `shipping_address`, `billing_address`, `coupon_code`, `coupon_discount`, `notes`, `admin_notes`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, NULL, NULL, NULL, 'ORD-20260826-000001', '19549.15', '0.00', '0.00', '0.00', '19549.15', '0.00', '19549.15', 'USD', 'pending', 'pending', 'cod', 'pending', '{\"recipient_name\":\"Shahadat Hosain\",\"phone\":\"01757839516\",\"address_line_1\":\"sdfg\",\"city\":null,\"district\":\"Gazipur\",\"postal_code\":null,\"country\":\"Bangladesh\"}', NULL, NULL, '0.00', NULL, NULL, NULL, NULL, '2026-08-26 02:43:20', '2026-08-26 02:43:20', NULL),
+(2, NULL, NULL, NULL, 'ORD-20260826-000002', '19549.15', '0.00', '0.00', '0.00', '19549.15', '0.00', '19549.15', 'USD', 'pending', 'pending', 'cod', 'pending', '{\"recipient_name\":\"Shahadat Hosain\",\"phone\":\"01757839516\",\"address_line_1\":\"sdfg\",\"city\":null,\"district\":\"Gazipur\",\"postal_code\":null,\"country\":\"Bangladesh\"}', NULL, NULL, '0.00', NULL, NULL, NULL, NULL, '2026-08-26 02:43:26', '2026-08-26 02:43:26', NULL),
+(3, NULL, NULL, NULL, 'ORD-20260826-000003', '19549.15', '0.00', '0.00', '0.00', '19549.15', '0.00', '19549.15', 'USD', 'pending', 'pending', 'cod', 'pending', '{\"recipient_name\":\"Shahadat Hosain\",\"phone\":\"01757839516\",\"address_line_1\":\"hjk\",\"city\":null,\"district\":\"Dhaka\",\"postal_code\":null,\"country\":\"Bangladesh\"}', NULL, NULL, '0.00', NULL, NULL, NULL, NULL, '2026-08-26 03:04:38', '2026-08-26 03:04:38', NULL),
+(4, NULL, NULL, NULL, 'ORD-20260826-000004', '19549.15', '0.00', '0.00', '0.00', '19549.15', '0.00', '19549.15', 'USD', 'pending', 'pending', 'cod', 'pending', '{\"recipient_name\":\"Shahadat Hosain\",\"phone\":\"01757839516\",\"address_line_1\":\"hjk\",\"city\":null,\"district\":\"Dhaka\",\"postal_code\":null,\"country\":\"Bangladesh\"}', NULL, NULL, '0.00', NULL, NULL, NULL, NULL, '2026-08-26 03:07:18', '2026-08-26 03:07:18', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -789,6 +803,16 @@ CREATE TABLE `order_items` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_variant_id`, `product_name`, `product_sku`, `unit_price`, `wholesale_price`, `quantity`, `subtotal`, `discount`, `tax`, `total`, `variant_attributes`, `created_at`, `updated_at`) VALUES
+(1, 1, 76, NULL, 'Philips Air Fryer XXL', NULL, '19549.15', NULL, 1, '19549.15', '0.00', '0.00', '19549.15', NULL, '2026-08-26 02:43:20', '2026-08-26 02:43:20'),
+(2, 2, 76, NULL, 'Philips Air Fryer XXL', NULL, '19549.15', NULL, 1, '19549.15', '0.00', '0.00', '19549.15', NULL, '2026-08-26 02:43:26', '2026-08-26 02:43:26'),
+(3, 3, 76, NULL, 'Philips Air Fryer XXL', NULL, '19549.15', NULL, 1, '19549.15', '0.00', '0.00', '19549.15', NULL, '2026-08-26 03:04:38', '2026-08-26 03:04:38'),
+(4, 4, 76, NULL, 'Philips Air Fryer XXL', NULL, '19549.15', NULL, 1, '19549.15', '0.00', '0.00', '19549.15', NULL, '2026-08-26 03:07:18', '2026-08-26 03:07:18');
+
 -- --------------------------------------------------------
 
 --
@@ -806,6 +830,16 @@ CREATE TABLE `order_status_histories` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `order_status_histories`
+--
+
+INSERT INTO `order_status_histories` (`id`, `order_id`, `from_status`, `to_status`, `changed_by_type`, `changed_by`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 1, NULL, 'pending', 'user', NULL, 'Order created', '2026-08-26 02:43:20', '2026-08-26 02:43:20'),
+(2, 2, NULL, 'pending', 'user', NULL, 'Order created', '2026-08-26 02:43:26', '2026-08-26 02:43:26'),
+(3, 3, NULL, 'pending', 'user', NULL, 'Order created', '2026-08-26 03:04:38', '2026-08-26 03:04:38'),
+(4, 4, NULL, 'pending', 'user', NULL, 'Order created', '2026-08-26 03:07:18', '2026-08-26 03:07:18');
 
 -- --------------------------------------------------------
 
@@ -1399,7 +1433,7 @@ INSERT INTO `site_settings` (`id`, `key`, `value`, `group`, `label`, `type`, `cr
 (7, 'footer_customer_service_links', '[{\"label\":\"FAQ\",\"url\":\"\\/page\\/faq\"},{\"label\":\"Shipping Policy\",\"url\":\"\\/page\\/shipping-policy\"},{\"label\":\"Return Policy\",\"url\":\"\\/page\\/return-policy\"},{\"label\":\"Privacy Policy\",\"url\":\"\\/page\\/privacy-policy\"},{\"label\":\"Terms & Conditions\",\"url\":\"\\/page\\/terms\"}]', 'footer', 'Footer Customer Service Links', 'json', '2026-08-19 18:58:40', '2026-08-19 19:04:28'),
 (8, 'trust_features', '[{\"icon\":\"\\ud83d\\ude9a\",\"title\":\"Free Shipping\",\"description\":\"Free delivery on orders over \\u09f35,000\",\"color\":\"emerald\"},{\"icon\":\"\\ud83d\\udd12\",\"title\":\"Secure Payment\",\"description\":\"100% secure checkout with SSL encryption\",\"color\":\"blue\"},{\"icon\":\"\\u21a9\\ufe0f\",\"title\":\"Easy Returns\",\"description\":\"7-day hassle-free return policy\",\"color\":\"amber\"},{\"icon\":\"\\ud83d\\udcac\",\"title\":\"24\\/7 Support\",\"description\":\"Round-the-clock customer support via phone & chat\",\"color\":\"violet\"}]', 'content', 'Trust Features', 'json', '2026-08-19 18:58:40', '2026-08-19 19:04:28'),
 (9, 'trusted_brands', '[\"Walton\",\"Samsung\",\"Apple\",\"Xiaomi\",\"Sony\",\"Philips\"]', 'content', 'Trusted Brands', 'json', '2026-08-19 18:58:40', '2026-08-19 19:04:28'),
-(10, 'logo', '', 'branding', 'Site Logo', 'image', '2026-08-19 18:58:40', '2026-08-19 18:58:40'),
+(10, 'logo', 'settings/uUPH1QtGkzGlYPleIfR37Am7lF910Ylz9RZd0RJA.jpg', 'branding', 'Site Logo', 'image', '2026-08-19 18:58:40', '2026-08-26 00:50:22'),
 (11, 'favicon', '', 'branding', 'Favicon', 'image', '2026-08-19 18:58:40', '2026-08-19 18:58:40'),
 (12, 'og_image', '', 'branding', 'OG Image (Social Share)', 'image', '2026-08-19 18:58:40', '2026-08-19 18:58:40'),
 (17, 'tax_rate', '0', 'checkout', 'Tax Rate (%)', 'text', '2026-08-19 18:58:41', '2026-08-19 19:04:28'),
@@ -1517,7 +1551,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `phone`, `address`, `avatar`, `bio`, `date_of_birth`, `gender`, `timezone`, `locale`, `email_verified_at`, `password`, `remember_token`, `type`, `created_at`, `updated_at`) VALUES
-(1, 'Shahadat Hossain', 'shahadat@asiancoder.com', NULL, NULL, NULL, NULL, NULL, NULL, 'UTC', 'en', '2026-08-19 19:00:23', '$2y$12$/rthXYaRRwcRa0KKY5bRM.4u5rK9QQMPfg2RU/gwLzcqR7Wf7A5.y', '0ZOuS04eK4', 'staff', '2026-08-19 19:00:24', '2026-08-19 19:00:24');
+(1, 'Shahadat Hossain', 'shahadat@asiancoder.com', NULL, NULL, NULL, NULL, '2026-08-01', NULL, 'UTC', 'en', '2026-08-19 19:00:23', '$2y$12$/rthXYaRRwcRa0KKY5bRM.4u5rK9QQMPfg2RU/gwLzcqR7Wf7A5.y', '0ZOuS04eK4', 'staff', '2026-08-19 19:00:24', '2026-08-19 19:00:24');
 
 -- --------------------------------------------------------
 
@@ -2208,25 +2242,25 @@ ALTER TABLE `media`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `order_status_histories`
 --
 ALTER TABLE `order_status_histories`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `pages`
