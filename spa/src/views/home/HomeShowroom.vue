@@ -7,6 +7,7 @@ import { useSiteStore } from '@/stores/site'
 import { useCartStore } from '@/stores/cart'
 import { useToast } from 'vue-toastification'
 import { getImageUrl } from '@/utils/image'
+import { getThemeText } from '@/utils/themeTexts'
 import { formatPrice, initCurrencySettings } from '@/utils/currency'
 
 const productStore = useProductStore()
@@ -31,8 +32,8 @@ const heroSlides = computed(() => {
     }))
   }
   return [{
-    title: 'Welcome to Our Store',
-    subtitle: 'Discover amazing products at great prices',
+    title: getThemeText('hero_title', 'Welcome to Our Store'),
+    subtitle: getThemeText('hero_subtitle', 'Discover amazing products at great prices'),
     cta: 'Shop Now',
     link: '/products',
     image: '🎉',
@@ -50,12 +51,13 @@ const parentCategories = computed(() =>
 const heroProduct = computed(() => featuredProducts.value[0] || null)
 
 const tickerItems = computed(() => {
+  const threshold = siteStore.getSetting('free_shipping_threshold', 5000)
   const base = [
-    'ক্যাশ অন ডেলিভারি',
-    'ফ্রি ডেলিভারি ৳৫০০+',
-    '৭ দিনের রিটার্ন',
-    'অরিজিনাল প্রোডাক্ট',
-    '২৪/৭ সাপোর্ট',
+    getThemeText('cash_on_delivery', 'ক্যাশ অন ডেলিভারি'),
+    `ফ্রি ডেলিভারি ${formatPrice(threshold)}+`,
+    getThemeText('easy_returns', '৭ দিনের রিটার্ন'),
+    getThemeText('original_product', 'অরিজিনাল প্রোডাক্ট'),
+    getThemeText('support_247', '২৪/৭ সাপোর্ট'),
   ]
   const phone = siteStore.getSetting('contact_phone', '+880 1234 567890')
   return [...base, `হটলাইন ${phone}`]
@@ -178,7 +180,7 @@ onUnmounted(() => {
       <div class="container">
         <div class="section-head">
           <p class="eyebrow">Index</p>
-          <h2 class="display small">Shop by Category</h2>
+          <h2 class="display small">{{ getThemeText('shop_by_category', 'Shop by Category') }}</h2>
         </div>
         <div v-if="loading" class="grid-cols-2 md:grid-cols-3 gap-px bg-line">
           <div v-for="i in 6" :key="i" class="cat-row animate-pulse"><div class="h-4 w-24 bg-paper/10"></div></div>
@@ -191,6 +193,9 @@ onUnmounted(() => {
             class="cat-row"
           >
             <span class="mono dim">{{ pad(i + 1) }}</span>
+            <div v-if="category.thumbnail" class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
+              <img :src="getImageUrl(category.thumbnail)" :alt="category.name" class="w-full h-full object-cover" />
+            </div>
             <span class="cat-name">{{ category.name }}</span>
             <span class="mono dim count">{{ category.products?.length || 0 }} items</span>
             <span class="cat-arrow" aria-hidden="true">→</span>

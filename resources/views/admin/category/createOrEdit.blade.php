@@ -64,7 +64,18 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="featured">Featured</label>
+                                <div class="custom-control custom-switch mt-2">
+                                    <input type="hidden" name="featured" value="0" />
+                                    <input type="checkbox" class="custom-control-input" id="featured" name="featured" value="1" {{ old('featured', $category->featured ?? 0) ? 'checked' : '' }} />
+                                    <label class="custom-control-label" for="featured">Featured on Homepage</label>
+                                </div>
+                                @error('featured')<span class="text-danger">{{ $message }}</span>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label for="status">Status <span class="text-danger">*</span></label>
                                 <select id="status" name="status" class="form-control" required>
@@ -76,7 +87,7 @@
                                 @error('status')<span class="text-danger">{{ $message }}</span>@enderror
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label for="visibility">Visibility <span class="text-danger">*</span></label>
                                 <select id="visibility" name="visibility" class="form-control" required>
@@ -89,7 +100,7 @@
                                 @error('visibility')<span class="text-danger">{{ $message }}</span>@enderror
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label for="sort_order">Sort Order</label>
                                 <input id="sort_order" name="sort_order" type="number" value="{{ old('sort_order', $category->sort_order ?? 0) }}" class="form-control" />

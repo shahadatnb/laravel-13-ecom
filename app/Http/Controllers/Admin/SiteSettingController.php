@@ -242,4 +242,29 @@ class SiteSettingController extends Controller
         return redirect()->route('admin.settings.site-settings')
             ->with('success', 'Site settings updated successfully.');
     }
+
+    /**
+     * Show theme texts management page.
+     */
+    public function themeTexts(): View
+    {
+        $settings = SiteSetting::where('group', 'theme_texts')->pluck('value', 'key')->toArray();
+        return view('admin.settings.theme-texts', compact('settings'));
+    }
+
+    /**
+     * Update theme texts.
+     */
+    public function updateThemeTexts(Request $request): RedirectResponse
+    {
+        $texts = $request->input('texts', []);
+        foreach ($texts as $key => $value) {
+            SiteSetting::updateOrCreate(
+                ['key' => $key],
+                ['value' => $value, 'type' => 'text', 'group' => 'theme_texts']
+            );
+        }
+        return redirect()->route('admin.settings.theme-texts')
+            ->with('success', 'Theme texts updated successfully.');
+    }
 }

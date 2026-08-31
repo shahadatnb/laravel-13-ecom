@@ -5,6 +5,7 @@ import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
 import ProductService from '@/services/ProductService'
 import { getImageUrl } from '@/utils/image'
+import { getThemeText } from '@/utils/themeTexts'
 
 const siteStore = useSiteStore()
 const categoryStore = useCategoryStore()
@@ -31,11 +32,11 @@ const heroSlides = computed(() => {
     }))
   }
   return [{
-    title: 'Discover the Best Deals Online',
-    subtitle: 'Shop the latest trends with amazing prices. Quality products, fast delivery, and exceptional customer service.',
-    cta: 'Shop Now',
+    title: getThemeText('hero_title', 'Discover the Best Deals Online'),
+    subtitle: getThemeText('hero_subtitle', 'Shop the latest trends with amazing prices.'),
+    cta: getThemeText('hero_cta', 'Shop Now'),
     link: '/products',
-    badge: 'New Season Collection',
+    badge: getThemeText('hero_cta', 'New Season Collection'),
   }]
 })
 
@@ -171,7 +172,7 @@ function goToCategory(slug) {
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between mb-8">
           <div>
-            <h2 class="section-title">Shop by Category</h2>
+            <h2 class="section-title">{{ getThemeText('shop_by_category', 'Shop by Category') }}</h2>
             <p class="text-neutral-500 mt-1">Browse our top categories</p>
           </div>
           <RouterLink :to="{ name: 'categories.index' }" class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 transition-colors">
@@ -183,8 +184,9 @@ function goToCategory(slug) {
           <div v-for="category in categoryStore.categories.slice(0, 6)" :key="category.id"
             @click="goToCategory(category.slug)"
             class="group cursor-pointer bg-white rounded-2xl border border-neutral-100 p-5 text-center hover:shadow-lg hover:border-primary-200 transition-all duration-300 hover:-translate-y-1">
-            <div class="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary-100 transition-colors">
-              <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            <div class="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary-100 transition-colors overflow-hidden">
+              <img v-if="category.thumbnail" :src="getImageUrl(category.thumbnail)" :alt="category.name" class="w-full h-full object-cover rounded-2xl" />
+              <svg v-else class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
             </div>
             <h3 class="text-sm font-semibold text-neutral-800 group-hover:text-primary-700 transition-colors">{{ category.name }}</h3>
           </div>
@@ -197,8 +199,8 @@ function goToCategory(slug) {
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between mb-8">
           <div>
-            <h2 class="section-title">Featured Products</h2>
-            <p class="text-neutral-500 mt-1">Handpicked items just for you</p>
+            <h2 class="section-title">{{ getThemeText('featured_products', 'Featured Products') }}</h2>
+            <p class="text-neutral-500 mt-1">{{ getThemeText('featured_products_subtitle', 'Handpicked items just for you') }}</p>
           </div>
           <RouterLink :to="{ name: 'products.index' }" class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 transition-colors">
             View All
@@ -252,7 +254,7 @@ function goToCategory(slug) {
               <p class="text-primary-100/80">Get up to 30% off on selected items. Limited time only!</p>
             </div>
             <RouterLink :to="{ name: 'products.index' }" class="btn bg-white text-primary-700 hover:bg-primary-50 font-semibold shadow-xl whitespace-nowrap">
-              Shop the Sale
+              {{ getThemeText('hero_cta', 'Shop the Sale') }}
               <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </RouterLink>
           </div>

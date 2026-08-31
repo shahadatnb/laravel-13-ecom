@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -15,11 +16,16 @@ class ProductController extends Controller
     {
         $query = Product::with(['category', 'categories', 'brand', 'images', 'variants']);
 
-        // Filter by category
+        // Filter by category (includes all subcategories recursively)
         if ($request->has('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
+            $category = Category::where('slug', $request->category)->first();
+            if ($category) {
+                $categoryIds = $this->getCategoryAndChildIds($category);
+                $query->whereIn('category_id', $categoryIds)
+                      ->orWhereHas('categories', function ($cq) use ($categoryIds) {
+                          $cq->whereIn('category_product.category_id', $categoryIds);
+                      });
+            }
         }
 
         // Filter by brand
@@ -171,5 +177,19 @@ class ProductController extends Controller
             'success' => true,
             'data' => $products,
         ]);
+    }
+
+    /**
+     * Recursively collect category ID and all descendant IDs.
+     */
+    private function getCategoryAndChildIds(Category $category): array
+    {
+        $ids = [$category->id];
+
+        foreach ($category->children as $child) {
+            $ids = array_merge($ids, $this->getCategoryAndChildIds($child));
+        }
+
+        return $ids;
     }
 }

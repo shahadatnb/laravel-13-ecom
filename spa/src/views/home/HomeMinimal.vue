@@ -5,6 +5,7 @@ import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
 import ProductService from '@/services/ProductService'
 import { getImageUrl } from '@/utils/image'
+import { getThemeText } from '@/utils/themeTexts'
 
 const siteStore = useSiteStore()
 const categoryStore = useCategoryStore()
@@ -125,13 +126,14 @@ onUnmounted(() => {
     <section class="py-16 md:py-24 bg-white">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <p class="text-sm font-semibold tracking-[0.2em] uppercase text-primary-600 mb-3">Browse</p>
-        <h2 class="text-3xl md:text-4xl font-bold font-display text-neutral-900 mb-12">Categories</h2>
+        <h2 class="text-3xl md:text-4xl font-bold font-display text-neutral-900 mb-12">{{ getThemeText('shop_by_category', 'Categories') }}</h2>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <div v-for="cat in categoryStore.categories.slice(0, 6)" :key="cat.id"
             @click="goToCategory(cat.slug)"
             class="group cursor-pointer border border-neutral-100 rounded-2xl p-6 text-center hover:border-primary-300 hover:shadow-md transition-all duration-300">
-            <div class="w-12 h-12 rounded-full bg-neutral-50 group-hover:bg-primary-50 flex items-center justify-center mx-auto mb-3 transition-colors">
-              <svg class="w-5 h-5 text-neutral-400 group-hover:text-primary-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            <div class="w-12 h-12 rounded-full bg-neutral-50 group-hover:bg-primary-50 flex items-center justify-center mx-auto mb-3 transition-colors overflow-hidden">
+              <img v-if="cat.thumbnail" :src="getImageUrl(cat.thumbnail)" :alt="cat.name" class="w-full h-full object-cover rounded-full" />
+              <svg v-else class="w-5 h-5 text-neutral-400 group-hover:text-primary-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
             </div>
             <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-700 group-hover:text-primary-700 transition-colors">{{ cat.name }}</h3>
           </div>
@@ -191,13 +193,13 @@ onUnmounted(() => {
       <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <p class="text-sm font-semibold tracking-[0.3em] uppercase text-primary-400 mb-4">Quality Promise</p>
         <h2 class="text-3xl md:text-5xl font-bold font-display text-white leading-tight max-w-2xl mx-auto mb-6">
-          Every product is handpicked, tested, and guaranteed.
+          {{ getThemeText('collection_subtitle', 'Every product is handpicked, tested, and guaranteed.') }}
         </h2>
         <p class="text-neutral-400 max-w-lg mx-auto mb-10">
           We stand behind everything we sell. Free returns within 7 days, no questions asked.
         </p>
         <RouterLink :to="{ name: 'products.index' }" class="btn bg-white text-neutral-900 hover:bg-neutral-100 px-8 py-3.5 text-sm font-semibold tracking-wide">
-          Shop the Collection
+          {{ getThemeText('shop_the_collection', 'Shop the Collection') }}
         </RouterLink>
       </div>
     </section>

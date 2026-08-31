@@ -184,6 +184,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('admin.settings.theme-texts') }}" class="nav-link {{ request()->routeIs('admin.settings.theme-texts*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-font"></i>
+                                <p>Theme Texts</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('admin.settings.site-settings') }}" class="nav-link {{ request()->routeIs('admin.settings.site-settings*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-globe"></i>
                                 <p>Site Settings</p>

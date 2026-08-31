@@ -3,6 +3,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/product'
 import { useCategoryStore } from '@/stores/category'
+import { useBrandStore } from '@/stores/brand'
 import { useCartStore } from '@/stores/cart'
 import { useWishlistStore } from '@/stores/wishlist'
 import { useAuthStore } from '@/stores/auth'
@@ -10,18 +11,32 @@ import { useToast } from 'vue-toastification'
 import { getImageUrl } from '@/utils/image'
 import { formatPrice } from '@/utils/currency'
 import QuickVariantSelector from '@/components/QuickVariantSelector.vue'
+import { useSeoMeta } from '@/composables/useSeoMeta'
 
 const route = useRoute()
 const router = useRouter()
 const productStore = useProductStore()
 const categoryStore = useCategoryStore()
+const brandStore = useBrandStore()
 const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
 const authStore = useAuthStore()
 const toast = useToast()
+const { setSeoMeta, clearSeoMeta } = useSeoMeta()
+
+// Set SEO meta on mount
+onMounted(() => {
+  setSeoMeta({
+    title: 'Products',
+    description: 'Browse our collection of products. Find the best deals and shop online.',
+    keywords: 'products, shop, online, deals',
+    type: 'website'
+  })
+})
 
 const loading = ref(true)
 const selectedCategory = ref(route.query.category || '')
+const selectedBrand = ref(route.query.brand || '')
 const sortBy = ref('latest')
 const wishlistToggling = ref(null)
 
@@ -47,7 +62,7 @@ function goToProduct(slug) {
 }
 
 onMounted(async () => {
-  await fetchProducts()
+  await Promise.all([fetchProducts(), categoryStore.fetchCategories(), brandStore.fetchBrands()])
 })
 
 async function fetchProducts() {
@@ -56,6 +71,9 @@ async function fetchProducts() {
     const params = {}
     if (selectedCategory.value) {
       params.category = selectedCategory.value
+    }
+    if (selectedBrand.value) {
+      params.brand = selectedBrand.value
     }
     if (sortBy.value) {
       params.sort = sortBy.value
@@ -129,10 +147,37 @@ function isVariableProduct(product) {
             </li>
             <li v-for="category in categoryStore.activeCategories" :key="category.id">
               <button
-                @click="selectedCategory = category.id; fetchProducts()"
-                :class="['w-full text-left py-2 px-4 rounded', selectedCategory == category.id ? 'bg-primary-100 text-primary-700' : 'hover:bg-gray-100']"
+                @click="selectedCategory = category.slug; fetchProducts()"
+                :class="['w-full text-left py-2 px-4 rounded', selectedCategory === category.slug ? 'bg-primary-100 text-primary-700' : 'hover:bg-gray-100']"
               >
                 {{ category.name }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Brand Filter -->
+        <div v-if="brandStore.activeBrands.length" class="bg-white rounded-lg shadow-md p-6 mt-4">
+          <h3 class="font-semibold text-lg mb-4">Brands</h3>
+          <ul class="space-y-2">
+            <li>
+              <button
+                @click="selectedBrand = ''; fetchProducts()"
+                :class="['w-full text-left py-2 px-4 rounded', !selectedBrand ? 'bg-primary-100 text-primary-700' : 'hover:bg-gray-100']"
+              >
+                All Brands
+              </button>
+            </li>
+            <li v-for="brand in brandStore.activeBrands" :key="brand.id">
+              <button
+                @click="selectedBrand = brand.slug; fetchProducts()"
+                :class="['w-full text-left py-2 px-4 rounded flex items-center justify-between', selectedBrand === brand.slug ? 'bg-primary-100 text-primary-700' : 'hover:bg-gray-100']"
+              >
+                <span class="flex items-center gap-2">
+                  <img v-if="brand.logo" :src="getImageUrl(brand.logo)" :alt="brand.name" class="w-5 h-5 rounded object-cover" />
+                  {{ brand.name }}
+                </span>
+                <span class="text-xs text-gray-400">{{ brand.product_count }}</span>
               </button>
             </li>
           </ul>

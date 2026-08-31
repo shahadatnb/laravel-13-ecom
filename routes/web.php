@@ -30,6 +30,12 @@ Route::get('/product/{slug}', [SeoController::class, 'handle'])->name('spa.produ
 Route::get('/category/{slug}', [SeoController::class, 'handle'])->name('spa.category');
 Route::get('/page/{slug}', [SeoController::class, 'handle'])->name('spa.page');
 
+// Sitemap
+Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
+
+// Robots.txt
+Route::get('/robots.txt', fn() => response(file_get_contents(public_path('robots.txt')), 200, ['Content-Type' => 'text/plain']));
+
 // Vue SPA - Catch all for client-side routing
 Route::get('/{any}', [SeoController::class, 'handle'])->where('any', '^(?!admin|api).*$')->name('spa.catchall');
 
@@ -209,6 +215,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/feature-items', [SiteSettingController::class, 'storeFeatureItem'])->name('feature-items.store');
             Route::put('/feature-items/{index}', [SiteSettingController::class, 'updateFeatureItem'])->name('feature-items.update');
             Route::delete('/feature-items/{index}', [SiteSettingController::class, 'destroyFeatureItem'])->name('feature-items.destroy');
+
+            // Theme Texts
+            Route::get('/theme-texts', [SiteSettingController::class, 'themeTexts'])->name('theme-texts');
+            Route::post('/theme-texts', [SiteSettingController::class, 'updateThemeTexts'])->name('theme-texts.update');
         });
     });
 });

@@ -99,7 +99,7 @@ function clearCart() {
               </div>
             </div>
           </div>
-          <RouterLink to="/checkout" class="btn btn-primary w-full mt-6 py-3">
+          <RouterLink to="/checkout" class="btn btn-primary w-full mt-6 py-3 block text-center">
             Proceed to Checkout
           </RouterLink>
         </div>

@@ -9,6 +9,7 @@ import { useWishlistStore } from '@/stores/wishlist'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import { getImageUrl } from '@/utils/image'
+import { getThemeText } from '@/utils/themeTexts'
 import { formatPrice, initCurrencySettings } from '@/utils/currency'
 import QuickVariantSelector from '@/components/QuickVariantSelector.vue'
 
@@ -44,8 +45,8 @@ const heroSlides = computed(() => {
   // Fallback defaults if no slides configured
   return [
     {
-      title: 'Welcome to Our Store',
-      subtitle: 'Discover amazing products at great prices',
+      title: getThemeText('hero_title', 'Welcome to Our Store'),
+      subtitle: getThemeText('hero_subtitle', 'Discover amazing products at great prices'),
       cta: 'Shop Now',
       link: '/products',
       bg: 'from-primary-700 via-primary-800 to-primary-900',
@@ -319,7 +320,7 @@ function getCategoryIcon(name) {
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
           <span class="text-primary-500 font-semibold text-sm uppercase tracking-wider">Categories</span>
-          <h2 class="text-3xl md:text-4xl font-bold mt-2">Shop by Category</h2>
+          <h2 class="text-3xl md:text-4xl font-bold mt-2">{{ getThemeText('shop_by_category', 'Shop by Category') }}</h2>
           <p class="text-gray-500 mt-3 max-w-xl mx-auto">Browse our wide range of product categories</p>
         </div>
 
@@ -339,8 +340,9 @@ function getCategoryIcon(name) {
             :to="`/category/${category.slug}`"
             class="group bg-white rounded-2xl p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100"
           >
-            <div class="w-16 h-16 bg-primary-50 group-hover:bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
-              {{ getCategoryIcon(category.name) }}
+            <div class="w-16 h-16 bg-primary-50 group-hover:bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden transition-colors">
+              <img v-if="category.thumbnail" :src="getImageUrl(category.thumbnail)" :alt="category.name" class="w-full h-full object-cover rounded-2xl" />
+              <span v-else class="text-3xl">{{ getCategoryIcon(category.name) }}</span>
             </div>
             <h3 class="font-semibold text-gray-800 group-hover:text-primary-600 transition-colors">{{ category.name }}</h3>
             <p class="text-sm text-gray-400 mt-1">{{ category.products?.length || 0 }} items</p>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\DeliveryZoneController;
@@ -72,6 +73,9 @@ Route::prefix('categories')->group(function () {
     Route::get('/active', [CategoryController::class, 'active'])->name('categories.active');
     Route::get('/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 });
+
+// Brand routes (public)
+Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
 
 // Public route for guest checkout
 Route::post('/guest-orders', [OrderController::class, 'store'])->name('orders.guest-store');

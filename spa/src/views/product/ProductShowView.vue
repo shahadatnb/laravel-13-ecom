@@ -88,6 +88,7 @@ import { useToast } from 'vue-toastification'
 import { getImageUrl } from '@/utils/image'
 import { formatPrice } from '@/utils/currency'
 import VariantSelector from '@/components/VariantSelector.vue'
+import { useSeoMeta } from '@/composables/useSeoMeta'
 
 
 const route = useRoute()
@@ -97,6 +98,7 @@ const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
 const authStore = useAuthStore()
 const toast = useToast()
+const { setSeoMeta, setProductJsonLd, setBreadcrumbJsonLd, clearSeoMeta } = useSeoMeta()
 
 const quantity = ref(1)
 const loading = ref(true)
@@ -214,6 +216,7 @@ watch(lightboxActive, (active) => {
 onUnmounted(() => {
   document.removeEventListener('keydown', handleLightboxKeydown)
   document.body.style.overflow = ''
+  clearSeoMeta()
 })
 
 // Can add to cart — requires variant selection for variable products
@@ -255,7 +258,7 @@ const hasVariants = computed(() => {
   return p.has_variants === true
 })
 
-// Watch: reset variant selection when product changes
+// Watch: reset variant selection when product changes + SEO
 watch(
   () => productStore.currentProduct,
   (newProduct) => {
@@ -263,6 +266,23 @@ watch(
     selectedVariant.value = null
     if (newProduct?.images?.length) {
       selectedImage.value = newProduct.images[0]
+    }
+    // SEO meta tags
+    if (newProduct) {
+      const imageUrl = newProduct.images?.[0]?.url || newProduct.thumbnail || ''
+      setSeoMeta({
+        title: newProduct.meta_title || newProduct.name,
+        description: newProduct.meta_description || newProduct.short_description || newProduct.description?.replace(/<[^>]*>/g, '').substring(0, 160),
+        keywords: newProduct.meta_keywords || newProduct.name,
+        image: imageUrl,
+        type: 'product'
+      })
+      setProductJsonLd(newProduct)
+      setBreadcrumbJsonLd([
+        { name: 'Home', url: '/' },
+        { name: newProduct.category?.name || 'Products', url: `/category/${newProduct.category?.slug}` },
+        { name: newProduct.name }
+      ])
     }
   }
 )

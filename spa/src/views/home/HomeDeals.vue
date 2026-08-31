@@ -5,6 +5,7 @@ import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
 import ProductService from '@/services/ProductService'
 import { getImageUrl } from '@/utils/image'
+import { getThemeText } from '@/utils/themeTexts'
 
 const siteStore = useSiteStore()
 const categoryStore = useCategoryStore()
@@ -13,6 +14,12 @@ const router = useRouter()
 const featuredProducts = ref([])
 const newProducts = ref([])
 const loading = ref(true)
+
+const featureItems = computed(() => {
+  const raw = siteStore.getSetting('trust_features', [])
+  if (Array.isArray(raw) && raw.length > 0) return raw
+  return []
+})
 
 onMounted(async () => {
   try {
@@ -52,7 +59,7 @@ const heroSlides = computed(() => {
     return slides.map(s => ({
       title: s.title,
       subtitle: s.subtitle,
-      cta: s.cta_text || 'Shop the Sale',
+      cta: s.cta_text || getThemeText('hero_cta', 'Shop the Sale'),
       link: s.cta_link || '/products',
       badge: s.badge_text || 'MEGA SALE LIVE NOW',
     }))
@@ -60,7 +67,7 @@ const heroSlides = computed(() => {
   return [{
     title: 'Save Big on Top Brands',
     subtitle: 'Massive discounts on electronics, fashion, and more. Limited stocks available — grab before they\'re gone!',
-    cta: 'Shop the Sale',
+    cta: getThemeText('hero_cta', 'Shop the Sale'),
     link: '/products',
     badge: 'MEGA SALE LIVE NOW',
   }]
@@ -155,7 +162,7 @@ onUnmounted(() => {
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-8">
           <div>
-            <h2 class="text-2xl md:text-3xl font-black font-display text-neutral-900">Shop by Category</h2>
+            <h2 class="text-2xl md:text-3xl font-black font-display text-neutral-900">{{ getThemeText('shop_by_category', 'Shop by Category') }}</h2>
             <p class="text-neutral-500 text-sm mt-1">Find what you need</p>
           </div>
           <RouterLink :to="{ name: 'categories.index' }" class="text-sm font-bold text-red-600 hover:text-red-700">View All →</RouterLink>
@@ -170,14 +177,15 @@ onUnmounted(() => {
               i % 4 === 2 ? 'bg-amber-50 hover:bg-amber-100' :
               'bg-emerald-50 hover:bg-emerald-100'
             ]">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110"
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110 overflow-hidden"
               :class="[
                 i % 4 === 0 ? 'bg-red-200 text-red-700' :
                 i % 4 === 1 ? 'bg-blue-200 text-blue-700' :
                 i % 4 === 2 ? 'bg-amber-200 text-amber-700' :
                 'bg-emerald-200 text-emerald-700'
               ]">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              <img v-if="cat.thumbnail" :src="getImageUrl(cat.thumbnail)" :alt="cat.name" class="w-full h-full object-cover rounded-xl" />
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
             </div>
             <h3 class="text-sm font-bold text-neutral-800">{{ cat.name }}</h3>
           </div>
@@ -191,8 +199,8 @@ onUnmounted(() => {
         <div class="flex items-center justify-between mb-8">
           <div class="flex items-center gap-3">
             <div>
-              <h2 class="text-2xl md:text-3xl font-black font-display text-neutral-900">Featured Deals</h2>
-              <p class="text-neutral-500 text-sm mt-1">Handpicked bargains for you</p>
+              <h2 class="text-2xl md:text-3xl font-black font-display text-neutral-900">{{ getThemeText('featured_deals', 'Featured Deals') }}</h2>
+              <p class="text-neutral-500 text-sm mt-1">{{ getThemeText('featured_deals_subtitle', 'Handpicked bargains for you') }}</p>
             </div>
             <span class="bg-red-100 text-red-700 text-xs font-black px-3 py-1 rounded-full animate-pulse">HOT</span>
           </div>
@@ -302,7 +310,13 @@ onUnmounted(() => {
     <!-- Trust Strip -->
     <section class="py-10 bg-neutral-100">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div v-if="featureItems.length" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div v-for="(item, idx) in featureItems" :key="idx" class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"><span class="text-lg">{{ item.icon }}</span></div>
+            <div><p class="text-sm font-bold text-neutral-800">{{ item.title }}</p><p class="text-xs text-neutral-500">{{ item.description }}</p></div>
+          </div>
+        </div>
+        <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"><span class="text-lg">🚚</span></div>
             <div><p class="text-sm font-bold text-neutral-800">Free Shipping</p><p class="text-xs text-neutral-500">On {{ formatPrice(siteStore.getSetting('free_shipping_threshold', 5000)) }}+</p></div>
