@@ -22,9 +22,9 @@ class ProductController extends Controller
             if ($category) {
                 $categoryIds = $this->getCategoryAndChildIds($category);
                 $query->whereIn('category_id', $categoryIds)
-                      ->orWhereHas('categories', function ($cq) use ($categoryIds) {
-                          $cq->whereIn('category_product.category_id', $categoryIds);
-                      });
+                    ->orWhereHas('categories', function ($cq) use ($categoryIds) {
+                        $cq->whereIn('category_product.category_id', $categoryIds);
+                    });
             }
         }
 
@@ -134,12 +134,12 @@ class ProductController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Get related products
-        $relatedProducts = Product::with(['images'])
+        // Get 5 other products from the same category (excluding current)
+        $relatedProducts = Product::with(['category', 'brand', 'images'])
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->whereIn('status', ['published', 'active'])
-            ->limit(4)
+            ->limit(5)
             ->get();
 
         return response()->json([

@@ -3,7 +3,12 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Production assets are served from /build/ (see @vite + public/build).
+  // The build-time base makes lazy-chunk CSS preload URLs resolve under
+  // /build/assets/ instead of /assets/ ("Unable to preload CSS" fix).
+  // Dev server keeps base '/' so hotAsset URLs keep working.
+  base: command === 'build' ? '/build/' : '/',
   root: path.resolve(__dirname, './spa'),
   plugins: [
     vue()
@@ -36,4 +41,4 @@ export default defineConfig({
       input: 'src/main.js'
     }
   }
-})
+}))

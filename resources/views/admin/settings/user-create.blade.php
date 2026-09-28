@@ -45,7 +45,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="date_of_birth">Date of Birth</label>
-                                <input id="date_of_birth" type="text" name="date_of_birth" value="{{ old('date_of_birth') }}" class="form-control datepicker" placeholder="dd-mm-yyyy" autocomplete="off">
+                                <input id="date_of_birth" type="text" name="date_of_birth" value="{{ old('date_of_birth') }}" class="form-control datepicker" placeholder="yyyy-mm-dd" autocomplete="off">
                                 @error('date_of_birth')<span class="text-danger">{{ $message }}</span>@enderror
                             </div>
                             <div class="form-group">
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         $('.js-select2').select2({ placeholder: 'Select...', allowClear: true });
     }
     $('.datepicker').datepicker({
-        dateFormat: 'dd-mm-yy',
+        dateFormat: 'yy-mm-dd',
         changeMonth: true,
         changeYear: true,
         yearRange: '-100:+0',

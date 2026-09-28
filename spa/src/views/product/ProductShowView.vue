@@ -881,7 +881,7 @@ async function toggleWishlist() {
             </RouterLink>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div
               v-for="product in productStore.relatedProducts"
               :key="product.id"

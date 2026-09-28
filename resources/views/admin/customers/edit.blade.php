@@ -74,8 +74,8 @@
                                         <label for="date_of_birth">Date of Birth</label>
                                         <input type="text" name="date_of_birth" id="date_of_birth"
                                             class="form-control datepicker @error('date_of_birth') is-invalid @enderror"
-                                            value="{{ old('date_of_birth', $customer->date_of_birth ? \Carbon\Carbon::parse($customer->date_of_birth)->format('d-m-Y') : '') }}"
-                                            placeholder="dd-mm-yyyy" autocomplete="off">
+                                            value="{{ old('date_of_birth', $customer->date_of_birth ? \Carbon\Carbon::parse($customer->date_of_birth)->format('Y-m-d') : '') }}"
+                                            placeholder="yyyy-mm-dd" autocomplete="off">
                                         @error('date_of_birth')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                         @enderror
@@ -140,7 +140,7 @@
 <script>
 $(function() {
     $('.datepicker').datepicker({
-        dateFormat: 'dd-mm-yy',
+        dateFormat: 'yy-mm-dd',
         yearRange: '-120:+0',
         maxDate: new Date(),
         changeMonth: true,

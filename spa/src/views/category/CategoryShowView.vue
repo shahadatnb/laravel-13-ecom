@@ -94,8 +94,12 @@ function formatPrice(price) {
           class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
         >
           <RouterLink :to="`/product/${product.slug}`">
-            <div class="aspect-square bg-gray-200 flex items-center justify-center">
-              <span class="text-6xl">📷</span>
+            <div class="aspect-square bg-gray-50 p-4 flex items-center justify-center">
+              <img
+                :src="getImageUrl(product.thumbnail || product.images?.[0]?.image)"
+                :alt="product.name"
+                class="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+              />
             </div>
           </RouterLink>
           <div class="p-4">

@@ -70,10 +70,11 @@ class DeliveryZoneRepository
     {
         $zone->districts()->delete();
 
-        $districts = array_map(function ($name) {
-            return ['name' => $name, 'status' => 'active'];
-        }, $districtNames);
-
-        $zone->districts()->createMany($districts);
+        foreach ($districtNames as $name) {
+            DeliveryZoneDistrict::updateOrCreate(
+                ['name' => $name],
+                ['status' => 'active', 'delivery_zone_id' => $zone->id]
+            );
+        }
     }
 }

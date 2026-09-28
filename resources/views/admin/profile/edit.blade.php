@@ -66,7 +66,7 @@
                             <div class="form-group row">
                                 <label for="date_of_birth" class="col-sm-2 col-form-label">Date of Birth</label>
                                 <div class="col-sm-10">
-                                    <input id="date_of_birth" name="date_of_birth" type="text" value="{{ old('date_of_birth', $user->date_of_birth ? \Carbon\Carbon::parse($user->date_of_birth)->format('d-m-Y') : '') }}" class="form-control datepicker" placeholder="dd-mm-yyyy" autocomplete="off" />
+                                    <input id="date_of_birth" name="date_of_birth" type="text" value="{{ old('date_of_birth', $user->date_of_birth ? \Carbon\Carbon::parse($user->date_of_birth)->format('Y-m-d') : '') }}" class="form-control datepicker" placeholder="yyyy-mm-dd" autocomplete="off" />
                                     @error('date_of_birth')<span class="text-danger">{{ $message }}</span>@enderror
                                 </div>
                             </div>
@@ -143,7 +143,7 @@
 <script>
 $(function () {
     $('.datepicker').datepicker({
-        dateFormat: 'dd-mm-yy',
+        dateFormat: 'yy-mm-dd',
         changeMonth: true,
         changeYear: true,
         yearRange: '-100:+0',

@@ -3,7 +3,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // SPA is always served from the domain root, independent of Vite's
+  // asset base (/build/ in production builds).
+  history: createWebHistory('/'),
   scrollBehavior(to, from, savedPosition) {
     // Restore scroll position when navigating back/forward
     if (savedPosition) {

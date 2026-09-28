@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, reactive } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/product'
 import { useCategoryStore } from '@/stores/category'
@@ -40,6 +40,33 @@ const selectedBrand = ref(route.query.brand || '')
 const sortBy = ref('latest')
 const wishlistToggling = ref(null)
 
+// ── Infinite scroll state ──
+const loadMoreTrigger = ref(null)
+let observer = null
+
+async function loadMore() {
+  await productStore.loadMoreProducts()
+}
+
+function setupInfiniteScroll() {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+  if (!loadMoreTrigger.value) {
+    return
+  }
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore()
+      }
+    },
+    { rootMargin: '400px' }
+  )
+  observer.observe(loadMoreTrigger.value)
+}
+
 // ── Quick Variant Selection state ──
 const selectedVariants = reactive({})
 
@@ -63,6 +90,15 @@ function goToProduct(slug) {
 
 onMounted(async () => {
   await Promise.all([fetchProducts(), categoryStore.fetchCategories(), brandStore.fetchBrands()])
+  await nextTick()
+  setupInfiniteScroll()
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
 })
 
 async function fetchProducts() {
@@ -79,6 +115,8 @@ async function fetchProducts() {
       params.sort = sortBy.value
     }
     await productStore.fetchProducts(params)
+    await nextTick()
+    setupInfiniteScroll()
   } finally {
     loading.value = false
   }
@@ -189,7 +227,10 @@ function isVariableProduct(product) {
         <!-- Sort Options -->
         <div class="bg-white rounded-lg shadow-md p-4 mb-6 flex justify-between items-center">
           <span class="text-gray-600">
-            {{ productStore.products.length }} products found
+            {{ productStore.totalProducts || productStore.products.length }} products found
+            <span v-if="productStore.products.length && productStore.totalProducts > productStore.products.length" class="text-gray-400">
+              (showing {{ productStore.products.length }})
+            </span>
           </span>
           <label for="sort-products" class="sr-only">Sort products</label>
           <select id="sort-products" v-model="sortBy" @change="fetchProducts" class="input w-auto">
@@ -278,6 +319,25 @@ function isVariableProduct(product) {
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Infinite scroll sentinel -->
+        <div v-if="!loading && productStore.products.length > 0" ref="loadMoreTrigger" class="py-8 text-center">
+          <div v-if="productStore.loadingMore" class="flex items-center justify-center gap-3 text-gray-500">
+            <svg class="w-6 h-6 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="text-sm font-medium">Loading more products...</span>
+          </div>
+          <div v-else-if="productStore.hasMore">
+            <button @click="loadMore" class="px-6 py-2.5 border border-gray-300 rounded-full text-sm font-medium text-gray-600 hover:border-primary-500 hover:text-primary-600 transition-colors">
+              Load More
+            </button>
+          </div>
+          <p v-else class="text-sm text-gray-400">
+            You've seen all {{ productStore.totalProducts || productStore.products.length }} products
+          </p>
         </div>
 
         <!-- Empty State -->

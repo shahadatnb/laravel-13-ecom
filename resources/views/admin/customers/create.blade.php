@@ -72,7 +72,7 @@
                                         <input type="text" name="date_of_birth" id="date_of_birth"
                                             class="form-control datepicker @error('date_of_birth') is-invalid @enderror"
                                             value="{{ old('date_of_birth') }}"
-                                            placeholder="dd-mm-yyyy" autocomplete="off">
+                                            placeholder="yyyy-mm-dd" autocomplete="off">
                                         @error('date_of_birth')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                         @enderror
@@ -137,7 +137,7 @@
 <script>
 $(function() {
     $('.datepicker').datepicker({
-        dateFormat: 'dd-mm-yy',
+        dateFormat: 'yy-mm-dd',
         yearRange: '-120:+0',
         maxDate: new Date(),
         changeMonth: true,
