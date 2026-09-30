@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import { getImageUrl } from '@/utils/image'
 
 const email = ref('')
 const orderNumber = ref('')
@@ -256,7 +257,7 @@ function resetSearch() {
               <div class="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
                 <img
                   v-if="item.product?.thumbnail"
-                  :src="`/storage/${item.product.thumbnail}`"
+                  :src="getImageUrl(item.product.thumbnail)"
                   :alt="item.name"
                   class="w-full h-full object-cover"
                   loading="lazy"

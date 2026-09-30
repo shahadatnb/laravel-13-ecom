@@ -3,6 +3,7 @@ import { RouterLink } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useToast } from 'vue-toastification'
 import { formatPrice } from '@/utils/currency'
+import { getImageUrl } from '@/utils/image'
 
 const cartStore = useCartStore()
 const toast = useToast()
@@ -32,8 +33,15 @@ function clearCart() {
         <div class="bg-white rounded-lg shadow-md">
           <div v-for="item in cartStore.items" :key="item.id" class="p-6 border-b last:border-b-0">
             <div class="flex items-center gap-6">
-              <div class="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center" aria-hidden="true">
-                <span class="text-3xl">📷</span>
+              <div class="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                <img
+                  v-if="item.thumbnail || item.images?.length"
+                  :src="getImageUrl(item.thumbnail || item.images?.[0]?.image)"
+                  :alt="item.name"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <span v-else class="text-3xl" aria-hidden="true">📷</span>
               </div>
               <div class="flex-1">
                 <h3 class="font-semibold text-lg">{{ item.name }}</h3>

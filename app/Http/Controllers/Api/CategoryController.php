@@ -12,7 +12,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::with(['children', 'products'])
+        $categories = Category::with(['children', 'products' => $this->publishedProducts()])
             ->where('parent_id', null)
             ->where('status', 'active')
             ->orderBy('sort_order')
@@ -29,7 +29,7 @@ class CategoryController extends Controller
      */
     public function active()
     {
-        $categories = Category::with('products')
+        $categories = Category::with(['products' => $this->publishedProducts()])
             ->where('status', 'active')
             ->orderBy('sort_order')
             ->get();
@@ -45,7 +45,13 @@ class CategoryController extends Controller
      */
     public function show($slug)
     {
-        $category = Category::with(['children', 'products.category', 'products.brand', 'products.images'])
+        $category = Category::with([
+            'children',
+            'products' => $this->publishedProducts(),
+            'products.category',
+            'products.brand',
+            'products.images',
+        ])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -53,5 +59,15 @@ class CategoryController extends Controller
             'success' => true,
             'data' => $category,
         ]);
+    }
+
+    /**
+     * Eager-load constraint: only published products are visible publicly.
+     */
+    private function publishedProducts(): \Closure
+    {
+        return function ($query) {
+            $query->whereIn('status', ['published']);
+        };
     }
 }

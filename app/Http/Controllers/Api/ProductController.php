@@ -10,21 +10,34 @@ use Illuminate\Http\Request;
 class ProductController extends Controller
 {
     /**
+     * Statuses the public API is allowed to expose.
+     */
+    private const PUBLIC_STATUSES = ['published'];
+
+    /**
      * Display a listing of products.
      */
     public function index(Request $request)
     {
         $query = Product::with(['category', 'categories', 'brand', 'images', 'variants']);
 
+        // Public API only exposes published products (draft/hidden/archived excluded)
+        $query->whereIn('status', self::PUBLIC_STATUSES);
+
         // Filter by category (includes all subcategories recursively)
+        // $categoryIds is ordered: parent first, then children by sort_order
+        $categoryIds = null;
         if ($request->has('category')) {
             $category = Category::where('slug', $request->category)->first();
             if ($category) {
                 $categoryIds = $this->getCategoryAndChildIds($category);
-                $query->whereIn('category_id', $categoryIds)
-                    ->orWhereHas('categories', function ($cq) use ($categoryIds) {
-                        $cq->whereIn('category_product.category_id', $categoryIds);
-                    });
+                // Grouped so the OR cannot bypass the status filter above
+                $query->where(function ($q) use ($categoryIds) {
+                    $q->whereIn('category_id', $categoryIds)
+                        ->orWhereHas('categories', function ($cq) use ($categoryIds) {
+                            $cq->whereIn('category_product.category_id', $categoryIds);
+                        });
+                });
             }
         }
 
@@ -41,11 +54,6 @@ class ProductController extends Controller
         }
         if ($request->has('max_price')) {
             $query->whereRaw('COALESCE(sale_price, regular_price, 0) <= ?', [$request->max_price]);
-        }
-
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
         }
 
         // Search
@@ -71,10 +79,24 @@ class ProductController extends Controller
         $sortKey = $request->get('sort', 'latest');
         $sortOrder = $request->get('order', 'desc');
 
+        // When browsing a category with the default sort, group products by
+        // their (sub)category sort_order so subcategory order drives the list.
+        // Products outside the category tree are pushed to the end (value 999999).
+        if ($categoryIds !== null && $sortKey === 'latest') {
+            $orderedIds = array_map('intval', $categoryIds);
+            $field = 'FIELD(category_id, '.implode(', ', $orderedIds).')';
+            $query->orderByRaw("CASE WHEN {$field} = 0 THEN 999999 ELSE {$field} END");
+        }
+
         if (isset($sortMap[$sortKey])) {
             [$sortBy, $defaultOrder] = $sortMap[$sortKey];
             $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : $defaultOrder;
-            $query->orderBy($sortBy, $sortOrder);
+            if (str_contains($sortBy, '(')) {
+                // Expression (e.g. COALESCE) must not be quoted as a column name
+                $query->orderByRaw("{$sortBy} {$sortOrder}");
+            } else {
+                $query->orderBy($sortBy, $sortOrder);
+            }
         } else {
             // Default to newest first for unknown sort keys
             $query->orderBy('created_at', 'desc');
@@ -97,7 +119,7 @@ class ProductController extends Controller
     {
         $products = Product::with(['category', 'categories', 'brand', 'images', 'variants'])
             ->where('featured', true)
-            ->whereIn('status', ['published', 'active'])
+            ->whereIn('status', self::PUBLIC_STATUSES)
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
@@ -114,7 +136,7 @@ class ProductController extends Controller
     public function newArrivals()
     {
         $products = Product::with(['category', 'categories', 'brand', 'images', 'variants'])
-            ->whereIn('status', ['published', 'active'])
+            ->whereIn('status', self::PUBLIC_STATUSES)
             ->orderBy('created_at', 'desc')
             ->limit(8)
             ->get();
@@ -132,13 +154,14 @@ class ProductController extends Controller
     {
         $product = Product::with(['category', 'categories', 'brand', 'images', 'variants.images'])
             ->where('slug', $slug)
+            ->whereIn('status', self::PUBLIC_STATUSES)
             ->firstOrFail();
 
         // Get 5 other products from the same category (excluding current)
         $relatedProducts = Product::with(['category', 'brand', 'images'])
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->whereIn('status', ['published', 'active'])
+            ->whereIn('status', self::PUBLIC_STATUSES)
             ->limit(5)
             ->get();
 
@@ -164,12 +187,12 @@ class ProductController extends Controller
         }
 
         $products = Product::with(['category', 'categories', 'brand', 'images', 'variants'])
+            ->whereIn('status', self::PUBLIC_STATUSES)
             ->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
                     ->orWhere('short_description', 'like', "%{$search}%");
             })
-            ->whereIn('status', ['published', 'active'])
             ->limit(20)
             ->get();
 
@@ -181,12 +204,13 @@ class ProductController extends Controller
 
     /**
      * Recursively collect category ID and all descendant IDs.
+     * Order is meaningful: parent first, then children by sort_order (depth-first).
      */
     private function getCategoryAndChildIds(Category $category): array
     {
         $ids = [$category->id];
 
-        foreach ($category->children as $child) {
+        foreach ($category->children()->orderBy('sort_order')->orderBy('id')->get() as $child) {
             $ids = array_merge($ids, $this->getCategoryAndChildIds($child));
         }
 

@@ -31,10 +31,13 @@ class SeoController extends Controller
 
         // ── Product page ──
         if (preg_match('#^product/(.+)$#', $path, $m)) {
-            $product = Product::where('slug', $m[1])->select('id', 'name', 'slug', 'short_description', 'description', 'thumbnail', 'meta_title', 'meta_description', 'meta_keywords')->first();
+            $product = Product::where('slug', $m[1])
+                ->where('status', 'published')
+                ->select('id', 'name', 'slug', 'short_description', 'description', 'thumbnail', 'meta_title', 'meta_description', 'meta_keywords')
+                ->first();
 
             if ($product) {
-                $productImage = $product->thumbnail ? asset('storage/' . $product->thumbnail) : $ogImage;
+                $productImage = $product->thumbnail ? asset('storage/'.$product->thumbnail) : $ogImage;
                 $seo['title'] = $product->meta_title ?: "{$product->name} - {$siteName}";
                 $seo['description'] = $product->meta_description ?: strip_tags($product->short_description ?: $product->description);
                 $seo['image'] = $productImage;
@@ -48,7 +51,7 @@ class SeoController extends Controller
             $category = Category::where('slug', $m[1])->select('id', 'name', 'slug', 'description', 'thumbnail', 'meta_title', 'meta_description', 'meta_keywords')->first();
 
             if ($category) {
-                $catImage = $category->thumbnail ? asset('storage/' . $category->thumbnail) : $ogImage;
+                $catImage = $category->thumbnail ? asset('storage/'.$category->thumbnail) : $ogImage;
                 $seo['title'] = $category->meta_title ?: "{$category->name} - {$siteName}";
                 $seo['description'] = $category->meta_description ?: strip_tags($category->description);
                 $seo['image'] = $catImage;
