@@ -4,7 +4,6 @@ import { RouterLink } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useAuthStore } from '@/stores/auth'
 import DashboardService from '@/services/DashboardService'
-import { formatPrice } from '@/utils/currency'
 
 const authStore = useAuthStore()
 const toast = useToast()
@@ -12,7 +11,6 @@ const toast = useToast()
 const loading = ref(true)
 const stats = ref({
   total_orders: 0,
-  wallet_balance: 0,
   total_addresses: 0,
   total_wishlist: 0,
 })
@@ -41,7 +39,7 @@ async function loadStats() {
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-8">Dashboard</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       <!-- Stats Cards -->
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center justify-between">
@@ -53,19 +51,6 @@ async function loadStats() {
         </div>
         <RouterLink to="/orders" class="text-primary-600 text-sm mt-4 inline-block hover:underline">
           View Orders →
-        </RouterLink>
-      </div>
-
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-gray-600 text-sm">Wallet Balance</p>
-            <p class="text-3xl font-bold text-green-600">{{ loading ? '…' : formatPrice(stats.wallet_balance) }}</p>
-          </div>
-          <div class="text-4xl">💰</div>
-        </div>
-        <RouterLink to="/wallet" class="text-primary-600 text-sm mt-4 inline-block hover:underline">
-          View Wallet →
         </RouterLink>
       </div>
 
@@ -100,7 +85,7 @@ async function loadStats() {
     <!-- Quick Actions -->
     <div class="bg-white rounded-lg shadow-md p-6">
       <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         <RouterLink to="/products" class="btn btn-secondary text-center py-4">
           🛍️ Shop Now
         </RouterLink>
@@ -109,9 +94,6 @@ async function loadStats() {
         </RouterLink>
         <RouterLink to="/addresses" class="btn btn-secondary text-center py-4">
           📍 Add Address
-        </RouterLink>
-        <RouterLink to="/wallet" class="btn btn-secondary text-center py-4">
-          💳 Add Funds
         </RouterLink>
       </div>
     </div>
