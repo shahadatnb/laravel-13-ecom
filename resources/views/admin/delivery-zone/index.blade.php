@@ -8,6 +8,9 @@
             <div class="card-header">
                 <h3 class="card-title">Delivery Zones</h3>
                 <div class="card-tools">
+                    <a href="{{ route('admin.districts.index') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-map-marked-alt"></i> Districts
+                    </a>
                     <a href="{{ route('admin.delivery-zones.create') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> New Zone
                     </a>

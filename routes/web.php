@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\BrandController;
-use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeliveryZoneController;
+use App\Http\Controllers\Admin\DistrictController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\OrderController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\EditorImageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 // Vue SPA - Routes with dynamic SEO meta tags
@@ -31,10 +33,10 @@ Route::get('/category/{slug}', [SeoController::class, 'handle'])->name('spa.cate
 Route::get('/page/{slug}', [SeoController::class, 'handle'])->name('spa.page');
 
 // Sitemap
-Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 // Robots.txt
-Route::get('/robots.txt', fn() => response(file_get_contents(public_path('robots.txt')), 200, ['Content-Type' => 'text/plain']));
+Route::get('/robots.txt', fn () => response(file_get_contents(public_path('robots.txt')), 200, ['Content-Type' => 'text/plain']));
 
 // Vue SPA - Catch all for client-side routing
 Route::get('/{any}', [SeoController::class, 'handle'])->where('any', '^(?!admin|api).*$')->name('spa.catchall');
@@ -85,6 +87,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('ac_config_store', function () {
             $exitCode = Artisan::call('storage:link');
+
             return 'OK';
         });
 
@@ -135,6 +138,14 @@ Route::middleware('auth')->group(function () {
 
         // Delivery Zones
         Route::resource('delivery-zones', DeliveryZoneController::class);
+
+        // Districts
+        Route::prefix('districts')->name('districts.')->group(function () {
+            Route::get('/', [DistrictController::class, 'index'])->name('index');
+            Route::get('/{district}/edit', [DistrictController::class, 'edit'])->name('edit');
+            Route::put('/{district}', [DistrictController::class, 'update'])->name('update');
+            Route::post('/{district}/toggle-status', [DistrictController::class, 'toggleStatus'])->name('toggle-status');
+        });
 
         // Coupons
         Route::prefix('coupons')->name('coupons.')->group(function () {

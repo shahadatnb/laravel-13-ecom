@@ -80,6 +80,12 @@
                         <p>Delivery Zones</p>
                     </a>
                 </li>
+                <li class="nav-item {{ request()->routeIs('admin.districts*') ? 'menu-open' : '' }}">
+                    <a href="{{ route('admin.districts.index') }}" class="nav-link {{ request()->routeIs('admin.districts*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-map-marked-alt"></i>
+                        <p>Districts</p>
+                    </a>
+                </li>
                 <li class="nav-item {{ request()->routeIs('admin.product.*', 'admin.category.*', 'admin.brand.*', 'admin.product-attribute.*') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ request()->routeIs('admin.product.*', 'admin.category.*', 'admin.brand.*', 'admin.product-attribute.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-box"></i>

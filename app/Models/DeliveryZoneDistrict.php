@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class DeliveryZoneDistrict extends Model
 {
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_INACTIVE = 'inactive';
+
     protected $fillable = [
         'delivery_zone_id',
         'name',

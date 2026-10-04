@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DeliveryZone;
+use App\Models\DeliveryZoneDistrict;
 use App\Repositories\DeliveryZoneRepository;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -73,6 +74,34 @@ class DeliveryZoneService
     public function delete(DeliveryZone $deliveryZone): void
     {
         $this->deliveryZoneRepository->delete($deliveryZone);
+    }
+
+    /**
+     * Paginated district list for the admin panel.
+     */
+    public function listDistricts(?string $search = null)
+    {
+        return $this->deliveryZoneRepository->getDistricts($search);
+    }
+
+    /**
+     * Update a district (rename, reassign zone, change status).
+     */
+    public function updateDistrict(DeliveryZoneDistrict $district, array $data): DeliveryZoneDistrict
+    {
+        return $this->deliveryZoneRepository->updateDistrict($district, $data);
+    }
+
+    /**
+     * Flip a district between active and inactive.
+     */
+    public function toggleDistrictStatus(DeliveryZoneDistrict $district): DeliveryZoneDistrict
+    {
+        $newStatus = $district->status === DeliveryZoneDistrict::STATUS_ACTIVE
+            ? DeliveryZoneDistrict::STATUS_INACTIVE
+            : DeliveryZoneDistrict::STATUS_ACTIVE;
+
+        return $this->deliveryZoneRepository->updateDistrict($district, ['status' => $newStatus]);
     }
 
     public function getActive(): Collection

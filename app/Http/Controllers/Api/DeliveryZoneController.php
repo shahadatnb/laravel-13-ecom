@@ -29,7 +29,7 @@ class DeliveryZoneController extends Controller
                     'districts' => $zone->districts->where('status', 'active')->pluck('name'),
                     'charge' => (float) $zone->charge,
                     'minimum_order_amount' => $zone->minimum_order_amount ? (float) $zone->minimum_order_amount : null,
-                    'formatted_charge' => currency_symbol() . number_format((float) $zone->charge, 2),
+                    'formatted_charge' => currency_symbol().number_format((float) $zone->charge, 2),
                 ];
             }),
         ]);
@@ -37,11 +37,16 @@ class DeliveryZoneController extends Controller
 
     /**
      * Get a flat list of all available districts with their zone info.
+     * Inactive districts (and districts of inactive zones) are hidden.
      */
     public function districts(): JsonResponse
     {
         $districts = DeliveryZoneDistrict::with('zone')
-            ->where('status', 'active')
+            ->active()
+            ->whereHas('zone', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->orderBy('name')
             ->get()
             ->map(function ($district) {
                 return [
