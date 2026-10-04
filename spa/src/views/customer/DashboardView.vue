@@ -1,15 +1,40 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { useAuthStore } from '@/stores/auth'
+import DashboardService from '@/services/DashboardService'
+import { formatPrice } from '@/utils/currency'
 
 const authStore = useAuthStore()
+const toast = useToast()
+
+const loading = ref(true)
+const stats = ref({
+  total_orders: 0,
+  wallet_balance: 0,
+  total_addresses: 0,
+  total_wishlist: 0,
+})
 
 onMounted(async () => {
   if (!authStore.user) {
     await authStore.fetchUser()
   }
+  await loadStats()
 })
+
+async function loadStats() {
+  loading.value = true
+  try {
+    const res = await DashboardService.getStats()
+    stats.value = res.data.data
+  } catch (error) {
+    toast.error('Failed to load dashboard stats.')
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
@@ -22,7 +47,7 @@ onMounted(async () => {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm">Total Orders</p>
-            <p class="text-3xl font-bold text-primary-600">0</p>
+            <p class="text-3xl font-bold text-primary-600">{{ loading ? '…' : stats.total_orders }}</p>
           </div>
           <div class="text-4xl">📦</div>
         </div>
@@ -35,7 +60,7 @@ onMounted(async () => {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm">Wallet Balance</p>
-            <p class="text-3xl font-bold text-green-600">0.00</p>
+            <p class="text-3xl font-bold text-green-600">{{ loading ? '…' : formatPrice(stats.wallet_balance) }}</p>
           </div>
           <div class="text-4xl">💰</div>
         </div>
@@ -48,7 +73,7 @@ onMounted(async () => {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm">Addresses</p>
-            <p class="text-3xl font-bold text-primary-600">0</p>
+            <p class="text-3xl font-bold text-primary-600">{{ loading ? '…' : stats.total_addresses }}</p>
           </div>
           <div class="text-4xl">📍</div>
         </div>
@@ -61,7 +86,7 @@ onMounted(async () => {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-600 text-sm">Wishlist</p>
-            <p class="text-3xl font-bold text-primary-600">0</p>
+            <p class="text-3xl font-bold text-primary-600">{{ loading ? '…' : stats.total_wishlist }}</p>
           </div>
           <div class="text-4xl">❤️</div>
         </div>

@@ -4,12 +4,14 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CouponController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DeliveryZoneController;
 use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SiteSettingController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -98,6 +100,12 @@ Route::middleware('auth:customer')->group(function () {
         Route::get('/available', [CouponController::class, 'available'])->name('coupons.available');
         Route::post('/validate', [CouponController::class, 'checkCoupon'])->name('coupons.validate');
     });
+
+    // Dashboard stats
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
+
+    // Wallet routes
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
 
     // Wishlist routes
     Route::prefix('wishlist')->group(function () {
