@@ -34,7 +34,7 @@ class WishlistController extends Controller
                     'product_id' => $product->id,
                     'product_slug' => $product->slug,
                     'product_name' => $product->name,
-                    'product_image' => $product->images->first()?->image,
+                    'product_image' => $product->thumbnail ?? $product->images->first()?->image,
                     'regular_price' => $product->regular_price,
                     'sale_price' => $variant?->price ?? $product->sale_price ?? $product->regular_price,
                     'stock' => $variant?->stock ?? $product->stock,

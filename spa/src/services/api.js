@@ -16,6 +16,14 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // FormData must not carry the JSON default content type, otherwise axios
+    // stringifies it and the server never receives the uploaded files.
+    // Removing the header lets the browser set multipart with the boundary.
+    if (config.data instanceof FormData) {
+      config.headers.setContentType(false)
+    }
+
     return config
   },
   (error) => {

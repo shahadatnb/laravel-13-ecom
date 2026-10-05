@@ -129,42 +129,4 @@
         </div>
     </div>
 </div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="form-group">
-            <label>
-                <i class="fas fa-tags text-success"></i>
-                Additional Categories
-                <span class="text-muted font-weight-normal small">(select multiple)</span>
-            </label>
-            <div class="category-checkbox-tree" style="max-height: 250px; overflow-y: auto; border: 1px solid #d2d6de; border-radius: 4px; padding: 10px; background: #fff;">
-                @php
-                    $selectedCategoryIds = old('category_ids', isset($product) ? $product->categories->pluck('id')->toArray() : []);
-                @endphp
-                @foreach ($categoryTree as $cat)
-                    <label class="d-flex align-items-center py-1 category-checkbox-label" style="padding-left: {{ $cat['depth'] * 20 + 4 }}px;">
-                        <input
-                            type="checkbox"
-                            name="category_ids[]"
-                            value="{{ $cat['id'] }}"
-                            class="mr-2"
-                            {{ in_array($cat['id'], $selectedCategoryIds) ? 'checked' : '' }}
-                        />
-                        <span>
-                            @if($cat['depth'] === 0)
-                                <strong>{{ $cat['name'] }}</strong>
-                            @else
-                                <span class="text-muted small">—</span> {{ $cat['name'] }}
-                            @endif
-                        </span>
-                    </label>
-                @endforeach
-            </div>
-            <small class="text-muted">Primary category is included automatically. Check additional categories as needed.</small>
-            @error('category_ids')<span class="text-danger">{{ $message }}</span>@enderror
-            @error('category_ids.*')<span class="text-danger">{{ $message }}</span>@enderror
-        </div>
-    </div>
-</div>
 </div>

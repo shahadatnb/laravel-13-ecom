@@ -240,3 +240,15 @@ test('product sku must be unique', function () {
 
     $response->assertSessionHasErrors(['sku']);
 });
+
+test('product form does not include additional categories section', function () {
+    $product = Product::factory()->create();
+
+    $this->get(route('admin.product.create'))
+        ->assertOk()
+        ->assertDontSee('Additional Categories');
+
+    $this->get(route('admin.product.edit', $product->id))
+        ->assertOk()
+        ->assertDontSee('Additional Categories');
+});

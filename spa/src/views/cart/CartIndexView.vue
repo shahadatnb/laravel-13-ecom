@@ -35,8 +35,8 @@ function clearCart() {
             <div class="flex items-center gap-6">
               <div class="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
                 <img
-                  v-if="item.thumbnail || item.images?.length"
-                  :src="getImageUrl(item.thumbnail || item.images?.[0]?.image)"
+                  v-if="item.thumbnail || item.image"
+                  :src="getImageUrl(item.thumbnail || item.image)"
                   :alt="item.name"
                   class="w-full h-full object-cover"
                   loading="lazy"

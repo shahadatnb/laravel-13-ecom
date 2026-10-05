@@ -48,7 +48,7 @@ export const useCartStore = defineStore('cart', () => {
         variant_sku: product.variant_sku || null,
         name: product.name,
         price: price,
-        image: product.image,
+        thumbnail: product.thumbnail || product.image || product.images?.[0]?.image || null,
         sku: product.sku || null,
         quantity: quantity
       })

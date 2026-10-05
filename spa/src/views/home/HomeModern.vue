@@ -3,6 +3,8 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useSiteStore } from '@/stores/site'
 import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
+import { useCartStore } from '@/stores/cart'
+import { useToast } from 'vue-toastification'
 import ProductService from '@/services/ProductService'
 import { getImageUrl } from '@/utils/image'
 import { getThemeText } from '@/utils/themeTexts'
@@ -10,6 +12,8 @@ import { getThemeText } from '@/utils/themeTexts'
 const siteStore = useSiteStore()
 const categoryStore = useCategoryStore()
 const router = useRouter()
+const cartStore = useCartStore()
+const toast = useToast()
 
 const featuredProducts = ref([])
 const newProducts = ref([])
@@ -85,6 +89,20 @@ function goToProduct(slug) {
 
 function goToCategory(slug) {
   router.push({ name: 'category.show', params: { slug } })
+}
+
+// Check if a product has variants (variable product)
+function isVariableProduct(product) {
+  if (!product) return false
+  if (product.product_type === 'variable' || product.type === 'variable') return true
+  if (product.has_variants === true) return true
+  if (product.variants && product.variants.length > 0) return true
+  return false
+}
+
+function addToCart(product) {
+  cartStore.addItem(product)
+  toast.success(`${product.name} added to cart!`)
 }
 </script>
 
@@ -236,6 +254,23 @@ function goToCategory(slug) {
                 <span class="text-lg font-bold text-primary-700">{{ formatPrice(product.sale_price || product.regular_price) }}</span>
                 <span v-if="product.sale_price" class="text-sm text-neutral-400 line-through">{{ formatPrice(product.regular_price) }}</span>
               </div>
+              <button
+                v-if="!isVariableProduct(product)"
+                @click.stop.prevent="addToCart(product)"
+                class="mt-3 w-full btn btn-primary btn-sm flex items-center justify-center gap-1.5"
+                title="Add to Cart"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+                Add to Cart
+              </button>
+              <button
+                v-else
+                @click.stop.prevent="goToProduct(product.slug)"
+                class="mt-3 w-full btn btn-secondary btn-sm"
+                title="View Options"
+              >
+                View Options
+              </button>
             </div>
           </div>
         </div>
@@ -296,6 +331,23 @@ function goToCategory(slug) {
                 <span class="text-lg font-bold text-primary-700">{{ formatPrice(product.sale_price || product.regular_price) }}</span>
                 <span v-if="product.sale_price" class="text-sm text-neutral-400 line-through">{{ formatPrice(product.regular_price) }}</span>
               </div>
+              <button
+                v-if="!isVariableProduct(product)"
+                @click.stop.prevent="addToCart(product)"
+                class="mt-3 w-full btn btn-primary btn-sm flex items-center justify-center gap-1.5"
+                title="Add to Cart"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+                Add to Cart
+              </button>
+              <button
+                v-else
+                @click.stop.prevent="goToProduct(product.slug)"
+                class="mt-3 w-full btn btn-secondary btn-sm"
+                title="View Options"
+              >
+                View Options
+              </button>
             </div>
           </div>
         </div>

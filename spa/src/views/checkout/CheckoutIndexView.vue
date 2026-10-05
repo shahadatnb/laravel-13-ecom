@@ -357,7 +357,16 @@ async function placeOrder() {
             
             <div class="space-y-4 mb-6">
               <div v-for="item in cartItems" :key="item.id" class="flex gap-4 pb-4 border-b border-gray-100 last:border-0">
-                <img :src="getImageUrl(item.thumbnail || item.images?.[0]?.image)" :alt="item.name" class="w-16 h-16 object-cover rounded-lg" loading="lazy" />
+                <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                  <img
+                    v-if="item.thumbnail || item.image"
+                    :src="getImageUrl(item.thumbnail || item.image)"
+                    :alt="item.name"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <span v-else class="text-xl" aria-hidden="true">📷</span>
+                </div>
                 <div class="flex-1 min-w-0">
                   <div class="font-medium text-gray-900 truncate">{{ item.name }}</div>
                   <div class="text-sm text-gray-500">Qty: {{ item.quantity }}</div>

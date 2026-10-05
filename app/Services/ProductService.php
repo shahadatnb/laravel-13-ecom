@@ -117,6 +117,16 @@ class ProductService
     }
 
     /**
+     * Get products paginated with combined list filters.
+     *
+     * @param  array{q?: string, stock_status?: string, status?: string, brand_id?: int|string, category_id?: int|string, featured?: string}  $filters
+     */
+    public function listPaginatedFiltered(array $filters = [], int $perPage = 50)
+    {
+        return $this->productRepository->getPaginatedFiltered($filters, $perPage);
+    }
+
+    /**
      * Search products by name or SKU.
      */
     public function search(string $query, int $limit = 10): Collection

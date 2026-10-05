@@ -75,6 +75,18 @@ class UserAddress extends Model
         return $this->is_active === true;
     }
 
+    /**
+     * Human readable label for the address type (Home, Work, Other).
+     */
+    public function getAddressTypeLabel(): string
+    {
+        return match ($this->address_type) {
+            self::TYPE_WORK => 'Work',
+            self::TYPE_OTHER => 'Other',
+            default => 'Home',
+        };
+    }
+
     public function getFullAddressAttribute(): string
     {
         $parts = [

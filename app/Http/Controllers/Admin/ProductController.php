@@ -6,6 +6,7 @@ use App\Actions\Product\CreateProductAction;
 use App\Actions\Product\DeleteProductAction;
 use App\Actions\Product\UpdateProductAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ProductIndexRequest;
 use App\Http\Requests\Admin\StoreProductRequest;
 use App\Http\Requests\Admin\UpdateProductRequest;
 use App\Models\Brand;
@@ -34,18 +35,15 @@ class ProductController extends Controller
     /**
      * Display a listing of products.
      */
-    public function index(): View
+    public function index(ProductIndexRequest $request): View
     {
-        $stockStatus = request()->get('stock_status', '');
+        $filters = $request->validated();
 
-        $products = match ($stockStatus) {
-            'in' => $this->productService->getInStockPaginated(50),
-            'low' => $this->productService->getLowStockPaginated(50),
-            'out' => $this->productService->getOutOfStockPaginated(50),
-            default => $this->productService->listPaginated(50),
-        };
+        $products = $this->productService->listPaginatedFiltered($filters, 50);
+        $brands = Brand::orderBy('name')->get(['id', 'name']);
+        $categories = Category::orderBy('name')->get(['id', 'name']);
 
-        return view('admin.product.index', compact('products', 'stockStatus'));
+        return view('admin.product.index', compact('products', 'filters', 'brands', 'categories'));
     }
 
     /**
@@ -110,7 +108,7 @@ class ProductController extends Controller
         $categories = Category::orderBy('name')->get();
         $categoryTree = $this->buildCategoryTree($categories);
         $attributes = ProductAttribute::with('values')->orderBy('sort_order')->get();
-        $product->load(['variants.images', 'categories']);
+        $product->load(['variants.images']);
 
         return view('admin.product.edit', compact('product', 'brands', 'categories', 'categoryTree', 'attributes'));
     }

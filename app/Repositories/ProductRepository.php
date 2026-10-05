@@ -256,4 +256,41 @@ class ProductRepository
             ->orderByDesc('id')
             ->paginate($perPage);
     }
+
+    /**
+     * Get products paginated with combined list filters.
+     *
+     * Supported filters: q (name / name_bn / sku / barcode), status, brand_id,
+     * category_id, featured and stock_status (in | low | out).
+     *
+     * @param  array{q?: string, stock_status?: string, status?: string, brand_id?: int|string, category_id?: int|string, featured?: string}  $filters
+     * @return LengthAwarePaginator
+     */
+    public function getPaginatedFiltered(array $filters = [], int $perPage = 50)
+    {
+        return Product::with(['brand', 'category', 'variants'])
+            ->when($filters['q'] ?? '', function ($query, $search) {
+                $search = '%'.trim($search).'%';
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', $search)
+                        ->orWhere('name_bn', 'like', $search)
+                        ->orWhere('sku', 'like', $search)
+                        ->orWhere('barcode', 'like', $search);
+                });
+            })
+            ->when($filters['status'] ?? '', fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['brand_id'] ?? '', fn ($query, $brandId) => $query->where('brand_id', $brandId))
+            ->when($filters['category_id'] ?? '', fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->when(($filters['featured'] ?? '') !== '', fn ($query) => $query->where('featured', $filters['featured'] === '1'))
+            ->when(($filters['stock_status'] ?? '') === 'in', fn ($query) => $query->whereColumn('stock', '>', 'minimum_stock'))
+            ->when(($filters['stock_status'] ?? '') === 'low', function ($query) {
+                $query->whereColumn('stock', '<=', 'minimum_stock')
+                    ->where('stock', '>', 0);
+            })
+            ->when(($filters['stock_status'] ?? '') === 'out', fn ($query) => $query->where('stock', '<=', 0))
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
 }

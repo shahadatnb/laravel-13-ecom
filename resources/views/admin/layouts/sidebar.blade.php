@@ -74,18 +74,6 @@
                         <p>Coupons</p>
                     </a>
                 </li>
-                <li class="nav-item {{ request()->routeIs('admin.delivery-zones*') ? 'menu-open' : '' }}">
-                    <a href="{{ route('admin.delivery-zones.index') }}" class="nav-link {{ request()->routeIs('admin.delivery-zones*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-truck"></i>
-                        <p>Delivery Zones</p>
-                    </a>
-                </li>
-                <li class="nav-item {{ request()->routeIs('admin.districts*') ? 'menu-open' : '' }}">
-                    <a href="{{ route('admin.districts.index') }}" class="nav-link {{ request()->routeIs('admin.districts*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-map-marked-alt"></i>
-                        <p>Districts</p>
-                    </a>
-                </li>
                 <li class="nav-item {{ request()->routeIs('admin.product.*', 'admin.category.*', 'admin.brand.*', 'admin.product-attribute.*') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ request()->routeIs('admin.product.*', 'admin.category.*', 'admin.brand.*', 'admin.product-attribute.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-box"></i>
@@ -150,6 +138,12 @@
                         </li>
                     </ul>
                 </li>
+                <li class="nav-item {{ request()->routeIs('admin.delivery-zones*') ? 'menu-open' : '' }}">
+                    <a href="{{ route('admin.delivery-zones.index') }}" class="nav-link {{ request()->routeIs('admin.delivery-zones*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-truck"></i>
+                        <p>Delivery Zones</p>
+                    </a>
+                </li>
                 <li class="nav-item {{ request()->routeIs('admin.media*') ? 'menu-open' : '' }}">
                     <a href="{{ route('admin.media.index') }}" class="nav-link {{ request()->routeIs('admin.media*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-photo-video"></i>
@@ -193,6 +187,12 @@
                             <a href="{{ route('admin.settings.theme-texts') }}" class="nav-link {{ request()->routeIs('admin.settings.theme-texts*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-font"></i>
                                 <p>Theme Texts</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('admin.districts*') ? 'menu-open' : '' }}">
+                            <a href="{{ route('admin.districts.index') }}" class="nav-link {{ request()->routeIs('admin.districts*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-map-marked-alt"></i>
+                                <p>Districts</p>
                             </a>
                         </li>
                         <li class="nav-item">

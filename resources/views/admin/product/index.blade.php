@@ -9,20 +9,21 @@
                 <h3 class="card-title">Product List</h3>
                 <div class="card-tools d-flex align-items-center gap-2">
                     <div class="btn-group btn-group-sm mr-2" role="group" aria-label="Stock filters">
-                        <a href="{{ route('admin.product.index') }}"
-                           class="btn {{ empty($stockStatus) ? 'btn-info' : 'btn-outline-info' }}">
+                        @php $stockQuickLinks = request()->except(['stock_status', 'page']); @endphp
+                        <a href="{{ route('admin.product.index', $stockQuickLinks) }}"
+                           class="btn {{ ($filters['stock_status'] ?? '') === '' ? 'btn-info' : 'btn-outline-info' }}">
                             <i class="fas fa-list"></i> All
                         </a>
-                        <a href="{{ route('admin.product.index', ['stock_status' => 'in']) }}"
-                           class="btn {{ ($stockStatus ?? '') === 'in' ? 'btn-success' : 'btn-outline-success' }}">
+                        <a href="{{ route('admin.product.index', array_merge($stockQuickLinks, ['stock_status' => 'in'])) }}"
+                           class="btn {{ ($filters['stock_status'] ?? '') === 'in' ? 'btn-success' : 'btn-outline-success' }}">
                             <i class="fas fa-check-circle"></i> In Stock
                         </a>
-                        <a href="{{ route('admin.product.index', ['stock_status' => 'low']) }}"
-                           class="btn {{ ($stockStatus ?? '') === 'low' ? 'btn-warning' : 'btn-outline-warning' }}">
+                        <a href="{{ route('admin.product.index', array_merge($stockQuickLinks, ['stock_status' => 'low'])) }}"
+                           class="btn {{ ($filters['stock_status'] ?? '') === 'low' ? 'btn-warning' : 'btn-outline-warning' }}">
                             <i class="fas fa-exclamation-triangle"></i> Low Stock
                         </a>
-                        <a href="{{ route('admin.product.index', ['stock_status' => 'out']) }}"
-                           class="btn {{ ($stockStatus ?? '') === 'out' ? 'btn-danger' : 'btn-outline-danger' }}">
+                        <a href="{{ route('admin.product.index', array_merge($stockQuickLinks, ['stock_status' => 'out'])) }}"
+                           class="btn {{ ($filters['stock_status'] ?? '') === 'out' ? 'btn-danger' : 'btn-outline-danger' }}">
                             <i class="fas fa-times-circle"></i> Out of Stock
                         </a>
                     </div>
@@ -101,6 +102,81 @@
             </div>
             <div class="card-body">
                 @include('admin.layouts._message')
+
+                <form method="GET" action="{{ route('admin.product.index') }}" class="row mb-3">
+                    @if ($errors->any())
+                        <div class="col-12">
+                            <div class="alert alert-danger alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                                <h5><i class="icon fas fa-ban"></i> Invalid filter value.</h5>
+                                <ul class="mb-0 pl-3">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+                    <div class="col-md-3">
+                        <label style="font-size:13px;font-weight:600;">Search</label>
+                        <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control form-control-sm" placeholder="Name / Name (BN) / SKU / Barcode" />
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Brand</label>
+                        <select name="brand_id" class="form-control form-control-sm">
+                            <option value="">All brands</option>
+                            @foreach ($brands as $brand)
+                                <option value="{{ $brand->id }}" @selected(($filters['brand_id'] ?? '') == $brand->id)>{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Category</label>
+                        <select name="category_id" class="form-control form-control-sm">
+                            <option value="">All categories</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}" @selected(($filters['category_id'] ?? '') == $category->id)>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Status</label>
+                        <select name="status" class="form-control form-control-sm">
+                            <option value="">All statuses</option>
+                            <option value="published" @selected(($filters['status'] ?? '') === 'published')>Published</option>
+                            <option value="draft" @selected(($filters['status'] ?? '') === 'draft')>Draft</option>
+                            <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>Pending</option>
+                            <option value="hidden" @selected(($filters['status'] ?? '') === 'hidden')>Hidden</option>
+                            <option value="archived" @selected(($filters['status'] ?? '') === 'archived')>Archived</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Stock</label>
+                        <select name="stock_status" class="form-control form-control-sm">
+                            <option value="">All stock</option>
+                            <option value="in" @selected(($filters['stock_status'] ?? '') === 'in')>In Stock</option>
+                            <option value="low" @selected(($filters['stock_status'] ?? '') === 'low')>Low Stock</option>
+                            <option value="out" @selected(($filters['stock_status'] ?? '') === 'out')>Out of Stock</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label style="font-size:13px;font-weight:600;">Featured</label>
+                        <select name="featured" class="form-control form-control-sm">
+                            <option value="">All</option>
+                            <option value="1" @selected(($filters['featured'] ?? '') === '1')>Yes</option>
+                            <option value="0" @selected(($filters['featured'] ?? '') === '0')>No</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <button type="submit" class="btn btn-primary btn-sm mr-1">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                        <a href="{{ route('admin.product.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times"></i> Reset
+                        </a>
+                    </div>
+                </form>
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped" id="productTable">
                         <thead>
@@ -114,21 +190,7 @@
                                 <th data-col="brand">Brand</th>
                                 <th data-col="category">Category</th>
                                 <th data-col="price">Regular Price</th>
-                                <th data-col="stock_status">
-                                    Stock / Status / Featured
-                                    <div class="mt-1">
-                                        <select
-                                            class="form-control form-control-sm"
-                                            style="font-size:11px;"
-                                            onchange="if(this.value) window.location.href='{{ route('admin.product.index') }}?stock_status='+this.value; else window.location.href='{{ route('admin.product.index') }}';"
-                                        >
-                                            <option value="">All stock</option>
-                                            <option value="in" {{ ($stockStatus ?? '') === 'in' ? 'selected' : '' }}>In Stock</option>
-                                            <option value="low" {{ ($stockStatus ?? '') === 'low' ? 'selected' : '' }}>Low Stock</option>
-                                            <option value="out" {{ ($stockStatus ?? '') === 'out' ? 'selected' : '' }}>Out of Stock</option>
-                                        </select>
-                                    </div>
-                                </th>
+                                <th data-col="stock_status">Stock / Status / Featured</th>
                             </tr>
                         </thead>
                         <tbody>

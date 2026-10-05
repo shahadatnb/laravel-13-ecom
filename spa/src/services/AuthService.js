@@ -30,10 +30,10 @@ export default {
   },
 
   /**
-   * Update user profile
+   * Update user profile (multipart POST, supports avatar file upload)
    */
   updateProfile(data) {
-    return api.put('/customer', data)
+    return api.post('/customer', data)
   },
 
   /**

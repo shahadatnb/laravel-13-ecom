@@ -507,14 +507,6 @@ html {
     color: white;
 }
 
-/* Category Checkbox Tree */
-.category-checkbox-tree label {
-    cursor: pointer;
-}
-.category-checkbox-label:hover {
-    background: #f8f9fa;
-}
-
 /* Validation Error Styles */
 .is-invalid-ajax {
     border-color: #dc3545;

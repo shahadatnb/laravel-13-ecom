@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CategoryIndexRequest;
 use App\Http\Requests\Admin\StoreCategoryRequest;
 use App\Http\Requests\Admin\UpdateCategoryRequest;
 use App\Models\Category;
@@ -16,11 +17,13 @@ class CategoryController extends Controller
 {
     public function __construct(private CategoryService $categoryService) {}
 
-    public function index(): View
+    public function index(CategoryIndexRequest $request): View
     {
-        $categories = $this->categoryService->list();
+        $filters = $request->validated();
+        $categories = $this->categoryService->list($filters);
+        $parents = Category::whereNull('parent_id')->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.category.index', compact('categories'));
+        return view('admin.category.index', compact('categories', 'filters', 'parents'));
     }
 
     public function create(): View

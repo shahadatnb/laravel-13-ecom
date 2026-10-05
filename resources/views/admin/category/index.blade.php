@@ -15,6 +15,61 @@
             </div>
             <div class="card-body">
                 @include('admin.layouts._message')
+
+                <form method="GET" action="{{ route('admin.category.index') }}" class="row mb-3">
+                    @if ($errors->any())
+                        <div class="col-12">
+                            <div class="alert alert-danger alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                                <h5><i class="icon fas fa-ban"></i> Invalid filter value.</h5>
+                                <ul class="mb-0 pl-3">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+                    <div class="col-md-4">
+                        <label style="font-size:13px;font-weight:600;">Search</label>
+                        <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control form-control-sm" placeholder="Name / Name (BN) / Slug" />
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Status</label>
+                        <select name="status" class="form-control form-control-sm">
+                            <option value="">All statuses</option>
+                            <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
+                            <option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option>
+                            <option value="archived" @selected(($filters['status'] ?? '') === 'archived')>Archived</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Featured</label>
+                        <select name="featured" class="form-control form-control-sm">
+                            <option value="">All</option>
+                            <option value="1" @selected(($filters['featured'] ?? '') === '1')>Featured</option>
+                            <option value="0" @selected(($filters['featured'] ?? '') === '0')>Not Featured</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label style="font-size:13px;font-weight:600;">Parent Category</label>
+                        <select name="parent_id" class="form-control form-control-sm">
+                            <option value="">All parents</option>
+                            @foreach ($parents as $parent)
+                                <option value="{{ $parent->id }}" @selected(($filters['parent_id'] ?? '') == $parent->id)>{{ $parent->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-sm mr-1">
+                            <i class="fas fa-filter"></i> Apply
+                        </button>
+                        <a href="{{ route('admin.category.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times"></i> Reset
+                        </a>
+                    </div>
+                </form>
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped" id="categoryTable">
                         <thead>

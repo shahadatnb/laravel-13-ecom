@@ -10,9 +10,14 @@ class CategoryService
 {
     public function __construct(private CategoryRepository $categoryRepository) {}
 
-    public function list(): Collection
+    /**
+     * List categories, optionally filtered.
+     *
+     * @param  array{q?: string, status?: string, featured?: string, parent_id?: int|string}  $filters
+     */
+    public function list(array $filters = []): Collection
     {
-        return $this->categoryRepository->getAll();
+        return $this->categoryRepository->getFiltered($filters);
     }
 
     public function tree(): Collection

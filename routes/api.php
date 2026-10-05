@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WishlistController;
@@ -67,6 +69,9 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:customer')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
     Route::get('/customer', [AuthController::class, 'user'])->name('auth.user');
+    // POST (not PUT): PHP only parses multipart bodies into $_POST/$_FILES for POST,
+    // so profile updates with an avatar upload must come as POST.
+    Route::post('/customer', [ProfileController::class, 'update'])->name('customer.update');
 });
 
 // Category routes (public)
@@ -106,6 +111,14 @@ Route::middleware('auth:customer')->group(function () {
 
     // Wallet routes
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+
+    // Address routes
+    Route::prefix('addresses')->name('addresses.')->group(function () {
+        Route::get('/', [AddressController::class, 'index'])->name('index');
+        Route::post('/', [AddressController::class, 'store'])->name('store');
+        Route::put('/{userAddress}', [AddressController::class, 'update'])->name('update');
+        Route::delete('/{userAddress}', [AddressController::class, 'destroy'])->name('destroy');
+    });
 
     // Wishlist routes
     Route::prefix('wishlist')->group(function () {
