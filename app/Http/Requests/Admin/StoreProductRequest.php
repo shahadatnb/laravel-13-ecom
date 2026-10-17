@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProductRequest extends FormRequest
@@ -36,11 +37,51 @@ class StoreProductRequest extends FormRequest
             'variant_existing_images' => ['nullable', 'array'],
             'variant_existing_images.*' => ['nullable', 'array'],
             'variant_existing_images.*.*' => ['nullable', 'integer', 'exists:product_galleries,id'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.unit_weight' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'regular_price' => ['nullable', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'wholesale_price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock' => ['nullable', 'numeric', 'min:0'],
+            'stock_unit' => [
+                'nullable',
+                'in:unit,kg',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'kg') {
+                        $stock = $this->input('stock');
+                        if ($stock !== null && (float) $stock !== floor((float) $stock)) {
+                            $fail('Count stock must be a whole number. Switch Stock Unit to Kilogram (kg) for decimals.');
+                        }
+
+                        return;
+                    }
+
+                    if (empty($this->input('variants'))) {
+                        $weight = $this->input('weight');
+                        if ($weight === null || $weight === '' || (float) $weight <= 0) {
+                            $fail('Weight (kg) is required for a kilogram-stock product without variants.');
+                        }
+
+                        return;
+                    }
+
+                    foreach ($this->input('variants') as $variant) {
+                        $explicit = $variant['unit_weight'] ?? null;
+
+                        if (is_numeric($explicit) && (float) $explicit > 0) {
+                            continue;
+                        }
+
+                        $name = (string) ($variant['name'] ?? '');
+                        $attributes = json_decode($variant['attributes'] ?? '[]', true) ?: [];
+
+                        if (ProductVariant::deriveUnitWeight(array_merge(['name' => $name], $attributes)) === null) {
+                            $fail("Variant \"{$name}\" needs a weight like \"5kg\" (or fill the Weight column) so kilogram stock can be tracked.");
+                        }
+                    }
+                },
+            ],
             'minimum_stock' => ['nullable', 'integer', 'min:0'],
             'maximum_order' => ['nullable', 'integer', 'min:0'],
             'weight' => ['nullable', 'numeric', 'min:0'],
@@ -71,6 +112,7 @@ class StoreProductRequest extends FormRequest
             'barcode.unique' => 'The barcode has already been taken.',
             'status.required' => 'The status is required.',
             'visibility.required' => 'The visibility is required.',
+            'stock_unit.in' => 'The stock unit must be Count or Kilogram (kg).',
         ];
     }
 }

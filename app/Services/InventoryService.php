@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\StockReservation;
 use App\Models\StockTransfer;
@@ -80,7 +81,7 @@ class InventoryService implements InventoryServiceInterface
 
     // === Stock In ===
 
-    public function stockIn(int $productId, int $warehouseId, int $quantity, array $data = []): Inventory
+    public function stockIn(int $productId, int $warehouseId, int|float $quantity, array $data = []): Inventory
     {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Quantity must be positive.');
@@ -123,7 +124,7 @@ class InventoryService implements InventoryServiceInterface
 
     // === Stock Out ===
 
-    public function stockOut(int $productId, int $warehouseId, int $quantity, array $data = []): Inventory
+    public function stockOut(int $productId, int $warehouseId, int|float $quantity, array $data = []): Inventory
     {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Quantity must be positive.');
@@ -172,7 +173,7 @@ class InventoryService implements InventoryServiceInterface
 
     // === Stock Adjustment ===
 
-    public function adjustStock(int $productId, int $warehouseId, int $newQuantity, string $reason, array $data = []): Inventory
+    public function adjustStock(int $productId, int $warehouseId, int|float $newQuantity, string $reason, array $data = []): Inventory
     {
         return DB::transaction(function () use ($productId, $warehouseId, $newQuantity, $reason, $data) {
             $variantId = $data['product_variant_id'] ?? null;
@@ -185,7 +186,7 @@ class InventoryService implements InventoryServiceInterface
             $before = $inventory->current_stock;
             $change = $newQuantity - $before;
 
-            if ($change === 0) {
+            if ($change == 0) {
                 return $inventory;
             }
 
@@ -194,6 +195,10 @@ class InventoryService implements InventoryServiceInterface
 
             if ($variantId) {
                 ProductVariant::where('id', $variantId)->update(['stock' => $newQuantity]);
+            } else {
+                // Product-level rows drive the storefront pool, so keep it
+                // in sync or checkout will keep selling the old amount.
+                Product::where('id', $productId)->update(['stock' => $newQuantity]);
             }
 
             $type = $change > 0
@@ -221,7 +226,7 @@ class InventoryService implements InventoryServiceInterface
 
     // === Stock Transfer ===
 
-    public function transferStock(int $fromWarehouseId, int $toWarehouseId, int $productId, int $quantity, array $data = []): StockTransfer
+    public function transferStock(int $fromWarehouseId, int $toWarehouseId, int $productId, int|float $quantity, array $data = []): StockTransfer
     {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Quantity must be positive.');
@@ -434,6 +439,116 @@ class InventoryService implements InventoryServiceInterface
         });
     }
 
+    // === Order Stock Mirror ===
+
+    /**
+     * Mirror an order's stock deduction into the warehouse ledger.
+     * Runs inside the caller's order transaction.
+     *
+     * @param  array<int, array{product_id: int, product_variant_id: int|null, quantity: float, stock_after: float, product_name: string}>  $deltas
+     */
+    public function recordOrderSale(array $deltas, Order $order): void
+    {
+        $this->mirrorOrderDeltas($deltas, $order, InventoryTransaction::TYPE_SALE, "Order #{$order->order_number} completed");
+    }
+
+    /**
+     * Mirror an order's stock restock (cancel/refund/return) into the
+     * warehouse ledger. Runs inside the caller's transaction.
+     *
+     * @param  array<int, array{product_id: int, product_variant_id: int|null, quantity: float, stock_after: float, product_name: string}>  $deltas
+     */
+    public function recordOrderRestock(array $deltas, Order $order): void
+    {
+        $this->mirrorOrderDeltas($deltas, $order, InventoryTransaction::TYPE_RETURN, "Order #{$order->order_number} restocked");
+    }
+
+    /**
+     * Align warehouse inventory rows with the storefront pool deltas.
+     *
+     * Each delta carries the pool value AFTER the caller applied its change,
+     * so the mirrored row is set to that value directly (never decremented
+     * twice). When a product has more than one warehouse row the default
+     * warehouse row is adjusted by the delta instead, since a single global
+     * pool cannot describe per-warehouse rows.
+     *
+     * @param  array<int, array{product_id: int, product_variant_id: int|null, quantity: float, stock_after: float, product_name: string}>  $deltas
+     */
+    private function mirrorOrderDeltas(array $deltas, Order $order, string $type, string $reason): void
+    {
+        $warehouseId = $this->inventoryRepository->getDefaultWarehouse()?->id;
+
+        // Without a default warehouse there is no ledger to mirror into;
+        // the storefront pool remains the single source of stock truth.
+        if (! $warehouseId) {
+            return;
+        }
+
+        foreach ($deltas as $delta) {
+            $quantity = round((float) $delta['quantity'], 3);
+            $sign = $type === InventoryTransaction::TYPE_SALE ? -1 : 1;
+            $poolAfter = round((float) $delta['stock_after'], 3);
+
+            $inventory = Inventory::where('product_id', $delta['product_id'])
+                ->where('warehouse_id', $warehouseId)
+                ->where('product_variant_id', $delta['product_variant_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (! $inventory) {
+                // First ledger entry for this item: seed the row at the
+                // storefront pool so the ledger starts aligned.
+                $inventory = new Inventory([
+                    'product_id' => $delta['product_id'],
+                    'warehouse_id' => $warehouseId,
+                    'product_variant_id' => $delta['product_variant_id'],
+                    'current_stock' => $poolAfter,
+                    'reserved_stock' => 0,
+                    'minimum_stock' => 0,
+                    'reorder_level' => 0,
+                ]);
+                $inventory->save();
+                $before = round($poolAfter - ($sign * $quantity), 3);
+                $after = $poolAfter;
+            } else {
+                $rowCount = Inventory::where('product_id', $delta['product_id'])
+                    ->where('product_variant_id', $delta['product_variant_id'])
+                    ->count();
+
+                if ($rowCount <= 1) {
+                    // Unambiguous single warehouse: align exactly to the pool.
+                    $before = round($poolAfter - ($sign * $quantity), 3);
+                    $inventory->current_stock = $poolAfter;
+                    $after = $poolAfter;
+                } else {
+                    // Multiple warehouse rows: adjust the default row by the delta.
+                    $before = (float) $inventory->current_stock;
+                    $after = round($before + ($sign * $quantity), 3);
+                    $inventory->current_stock = $after;
+                }
+
+                $inventory->save();
+            }
+
+            $this->inventoryRepository->createTransaction([
+                'inventory_id' => $inventory->id,
+                'product_id' => $delta['product_id'],
+                'warehouse_id' => $warehouseId,
+                'product_variant_id' => $delta['product_variant_id'],
+                'user_id' => auth()->id(),
+                'type' => $type,
+                'reference_type' => 'order',
+                'reference_id' => $order->id,
+                'reference_number' => $order->order_number,
+                'quantity_before' => $before,
+                'quantity_change' => $sign > 0 ? $quantity : -$quantity,
+                'quantity_after' => $after,
+                'status' => 'completed',
+                'reason' => $reason,
+            ]);
+        }
+    }
+
     // === Ledger ===
 
     public function getLedger(int $productId, int $perPage = 15): LengthAwarePaginator
@@ -480,7 +595,7 @@ class InventoryService implements InventoryServiceInterface
         return $query->latest()->paginate($filters['per_page'] ?? 15);
     }
 
-    public function validateStock(int $productId, int $warehouseId, int $quantity, ?int $variantId = null): bool
+    public function validateStock(int $productId, int $warehouseId, int|float $quantity, ?int $variantId = null): bool
     {
         $inventory = $this->inventoryRepository->findInventoryByProduct($productId, $warehouseId, $variantId);
 

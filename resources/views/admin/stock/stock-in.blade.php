@@ -61,7 +61,12 @@
                             <div class="info-box-content">
                                 <span class="info-box-text">Type</span>
                                 <span class="info-box-number">
-                                    @if($product->variants->isNotEmpty())
+                                    @if($product->usesWeightPool())
+                                        <span class="badge badge-success">Kilogram Pool</span>
+                                        @if($product->variants->isNotEmpty())
+                                            <span class="badge badge-info">{{ $product->variants->count() }} variants</span>
+                                        @endif
+                                    @elseif($product->variants->isNotEmpty())
                                         <span class="badge badge-info">Variable ({{ $product->variants->count() }} variants)</span>
                                     @else
                                         <span class="badge badge-secondary">Simple</span>
@@ -72,8 +77,8 @@
                     </div>
                 </div>
 
-                @if($product->variants->isEmpty())
-                {{-- Simple product: single quantity stock-in --}}
+                @if($product->variants->isEmpty() || $product->usesWeightPool())
+                {{-- Simple product or kilogram pool: single quantity stock-in --}}
                 <form action="{{ route('admin.stock.stock-in', $product) }}" method="POST">
                     @csrf
                     <div class="row">
@@ -91,8 +96,8 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Quantity <span class="text-danger">*</span></label>
-                                <input type="number" name="quantity" value="{{ old('quantity', 1) }}" min="1" class="form-control @error('quantity') is-invalid @enderror">
+                                <label>Quantity{{ $product->usesWeightPool() ? ' (kg)' : '' }} <span class="text-danger">*</span></label>
+                                <input type="number" name="quantity" value="{{ old('quantity', 1) }}" min="{{ $product->usesWeightPool() ? '0.001' : '1' }}" step="{{ $product->usesWeightPool() ? '0.001' : '1' }}" class="form-control @error('quantity') is-invalid @enderror">
                                 @error('quantity') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -252,7 +257,7 @@
 $(function () {
     $('.select2').select2({ theme: 'bootstrap4' });
 
-    @if($product->variants->isNotEmpty())
+    @if($product->variants->isNotEmpty() && ! $product->usesWeightPool())
     $('#select-all-checkbox').on('change', function() {
         $('.variant-checkbox').prop('checked', this.checked);
         updateRowHighlights();

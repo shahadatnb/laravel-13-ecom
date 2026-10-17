@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\DeliveryZoneDistrict;
+use App\Models\District;
 use App\Services\DeliveryZoneService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,25 +36,40 @@ class DeliveryZoneController extends Controller
     }
 
     /**
-     * Get a flat list of all available districts with their zone info.
-     * Inactive districts (and districts of inactive zones) are hidden.
+     * Get a flat list of all deliverable districts with their zone info
+     * and the effective charge (district override → zone → site default).
+     * Districts without any charge source are hidden.
      */
     public function districts(): JsonResponse
     {
-        $districts = DeliveryZoneDistrict::with('zone')
+        $districts = District::with('zone')
             ->active()
-            ->whereHas('zone', function ($query) {
-                $query->where('status', 'active');
+            ->where(function ($query) {
+                $query->whereNull('delivery_zone_id')
+                    ->orWhereHas('zone', function ($zoneQuery) {
+                        $zoneQuery->where('status', 'active');
+                    });
             })
             ->orderBy('name')
             ->get()
-            ->map(function ($district) {
+            ->map(function (District $district) {
+                $resolved = $this->deliveryZoneService->resolveCharge($district);
+
+                if ($resolved === null) {
+                    return null;
+                }
+
                 return [
                     'name' => $district->name,
+                    'division' => $district->division,
                     'zone_id' => $district->delivery_zone_id,
                     'zone_name' => $district->zone->name ?? null,
+                    'charge' => $resolved['charge'],
+                    'source' => $resolved['source'],
                 ];
-            });
+            })
+            ->filter()
+            ->values();
 
         return response()->json([
             'success' => true,

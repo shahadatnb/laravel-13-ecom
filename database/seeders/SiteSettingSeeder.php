@@ -28,6 +28,7 @@ class SiteSettingSeeder extends Seeder
         $this->upsert('tax_rate', '0');
         $this->upsert('free_shipping_threshold', '5000');
         $this->upsert('shipping_rate', '100');
+        $this->upsert('allow_oversell', '0');
 
         $this->upsert('footer_quick_links', json_encode([
             ['label' => 'About Us', 'url' => '/page/about-us'],

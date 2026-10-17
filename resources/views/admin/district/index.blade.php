@@ -31,7 +31,9 @@
                             <tr>
                                 <th>#</th>
                                 <th>District Name</th>
+                                <th>Division</th>
                                 <th>Delivery Zone</th>
+                                <th>Charge</th>
                                 <th>Status</th>
                                 <th>Tools</th>
                             </tr>
@@ -41,7 +43,21 @@
                             <tr>
                                 <td>{{ $district->id }}</td>
                                 <td><strong>{{ $district->name }}</strong></td>
-                                <td>{{ $district->zone->name ?? '—' }}</td>
+                                <td>{{ $district->division ?? '—' }}</td>
+                                <td>{{ $district->zone->name ?? 'None' }}</td>
+                                <td>
+                                    @if($district->charge !== null)
+                                        {{ format_currency($district->charge) }}
+                                        <small class="text-muted d-block">district override</small>
+                                    @elseif($district->zone)
+                                        {{ format_currency($district->zone->charge) }}
+                                    @elseif($defaultCharge !== null)
+                                        {{ format_currency($defaultCharge) }}
+                                        <small class="text-muted d-block">site default</small>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td>
                                     @if($district->status == 'active')
                                         <span class="badge badge-success">Active</span>
@@ -65,7 +81,7 @@
                             @endforeach
                             @if($districts->isEmpty())
                             <tr>
-                                <td colspan="5" class="text-center">No districts found.</td>
+                                <td colspan="7" class="text-center">No districts found.</td>
                             </tr>
                             @endif
                         </tbody>

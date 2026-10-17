@@ -84,6 +84,7 @@ import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
 import { useWishlistStore } from '@/stores/wishlist'
 import { useAuthStore } from '@/stores/auth'
+import { useSiteStore } from '@/stores/site'
 import { useToast } from 'vue-toastification'
 import { getImageUrl } from '@/utils/image'
 import { formatPrice } from '@/utils/currency'
@@ -97,7 +98,11 @@ const productStore = useProductStore()
 const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
 const authStore = useAuthStore()
+const siteStore = useSiteStore()
 const toast = useToast()
+
+// Site-wide oversell toggle — when enabled, out-of-stock items stay purchasable
+const allowOversell = computed(() => siteStore.getSetting('allow_oversell') === '1')
 const { setSeoMeta, setProductJsonLd, setBreadcrumbJsonLd, clearSeoMeta } = useSeoMeta()
 
 const quantity = ref(1)
@@ -219,12 +224,16 @@ onUnmounted(() => {
   clearSeoMeta()
 })
 
-// Can add to cart — requires variant selection for variable products
+// Can add to cart — requires variant selection for variable products;
+// out-of-stock still blocks unless the site allows overselling
 const canAddToCart = computed(() => {
-  if (!inStock.value) return false
+  if (!inStock.value && !allowOversell.value) return false
   if (hasVariants.value && !selectedVariant.value) return false
   return true
 })
+
+// Out of stock but purchasable because overselling is enabled
+const backorderMode = computed(() => !inStock.value && allowOversell.value)
 
 // ── Variant Selection (managed by VariantSelector component) ──
 const selectedAttributes = ref({})
@@ -327,35 +336,121 @@ async function fetchProduct(slug) {
   }
 }
 
-const discountPercentage = computed(() => {
-  const product = productStore.currentProduct
+const isKgPool = computed(() => productStore.currentProduct?.stock_unit === 'kg')
+
+// Kilograms consumed by one unit of the current selection.
+const kgPackWeight = computed(() => {
+  if (!isKgPool.value) return null
   const v = selectedVariant.value
-  const reg = v?.regular_price || product?.regular_price
-  const sale = v?.sale_price || product?.sale_price
-  if (!reg || !sale) return 0
-  const regular = parseFloat(reg)
-  const saleP = parseFloat(sale)
-  if (regular <= 0 || saleP >= regular) return 0
-  return Math.round(((regular - saleP) / regular) * 100)
+  const weight = v ? parseFloat(v.unit_weight ?? 0) : parseFloat(productStore.currentProduct?.weight ?? 0)
+  return weight > 0 ? weight : null
+})
+
+const round2 = n => Math.round(n * 100) / 100
+
+// On a kg pool the product-level regular/sale rates are per-kilogram while a
+// variant's price is the pack total, so any product-rate fallback must be
+// scaled by the selected pack's weight.
+const kgScaledRate = rate => {
+  const weight = kgPackWeight.value
+  if (!selectedVariant.value || !isKgPool.value || weight === null || rate <= 0) return rate
+  return round2(rate * weight)
+}
+
+// The price the customer actually pays for the current selection:
+// the variant price once one is chosen, otherwise the (kg-scaled) product rate.
+const displayPrice = computed(() => {
+  const product = productStore.currentProduct
+  if (!product) return 0
+  const variantPrice = parseFloat(selectedVariant.value?.price ?? 0)
+  if (variantPrice > 0) {
+    return variantPrice
+  }
+  return kgScaledRate(parseFloat(product.sale_price || product.regular_price || 0))
+})
+
+// Original (compare-at) price shown struck through and as the discount base.
+// Variants only carry a single selling price, so the product's regular rate
+// is the reference — on a kg pool that rate is per kilogram, so a ৳70/kg
+// product's 5 kg pack compares against ৳350, not ৳70.
+const compareAtPrice = computed(() => {
+  const regular = parseFloat(productStore.currentProduct?.regular_price || 0)
+  return regular > 0 ? kgScaledRate(regular) : 0
+})
+
+const discountPercentage = computed(() => {
+  const base = compareAtPrice.value
+  const price = displayPrice.value
+  if (base <= 0 || price <= 0 || price >= base) return 0
+  return Math.round(((base - price) / base) * 100)
+})
+
+// How many purchasable units are available for the current selection.
+const availableUnits = computed(() => {
+  const p = productStore.currentProduct
+  if (!p) return 0
+  if (isKgPool.value) {
+    if (kgPackWeight.value === null) return 0
+    return Math.floor(parseFloat(p.stock ?? 0) / kgPackWeight.value)
+  }
+  const v = selectedVariant.value
+  return v ? (v.stock ?? 0) : (p.stock ?? 0)
+})
+
+// Quantity cap: maximum_order combined with real availability for kg pools.
+// Overselling lifts the availability cap so orders beyond stock are possible.
+const maxOrderQty = computed(() => {
+  const p = productStore.currentProduct
+  if (!p) return 1
+  const cap = p.maximum_order ? parseInt(p.maximum_order) : 99
+  if (allowOversell.value) return cap
+  if (isKgPool.value) {
+    return availableUnits.value > 0 ? Math.min(cap, availableUnits.value) : 1
+  }
+  return cap
 })
 
 const inStock = computed(() => {
+  const p = productStore.currentProduct
+  if (!p) return false
+  if (isKgPool.value) {
+    // Variable product awaiting a selection: judge by the pool itself.
+    if (hasVariants.value && !selectedVariant.value) return parseFloat(p.stock ?? 0) > 0
+    return availableUnits.value > 0
+  }
   const v = selectedVariant.value
   if (v) return (v.stock ?? 0) > 0
-  return (productStore.currentProduct?.stock ?? 0) > 0
+  return (p.stock ?? 0) > 0
 })
 
+const fmtKg = n => parseFloat(Number(n).toFixed(3))
+
 const stockStatusText = computed(() => {
+  const p = productStore.currentProduct
+  if (isKgPool.value) {
+    const pool = parseFloat(p?.stock ?? 0)
+    if (pool <= 0) return allowOversell.value ? 'Out of Stock (backorder allowed)' : 'Out of Stock'
+    if (kgPackWeight.value !== null) {
+      const packs = availableUnits.value
+      if (packs <= 0) {
+        return allowOversell.value
+          ? `Out of Stock (pool: ${fmtKg(pool)} kg — backorder allowed)`
+          : `Out of Stock (pool: ${fmtKg(pool)} kg)`
+      }
+      return `${fmtKg(pool)} kg in stock · ${packs} pack${packs === 1 ? '' : 's'} available`
+    }
+    return `${fmtKg(pool)} kg in stock`
+  }
   const v = selectedVariant.value
-  const stock = v ? (v.stock ?? 0) : (productStore.currentProduct?.stock ?? 0)
-  if (stock === 0) return 'Out of Stock'
+  const stock = v ? (v.stock ?? 0) : (p?.stock ?? 0)
+  if (stock === 0) return allowOversell.value ? 'Out of Stock (backorder allowed)' : 'Out of Stock'
   if (stock <= 10) return `Only ${stock} left in stock`
   return 'In Stock'
 })
 
 function addToCart() {
   if (!canAddToCart.value) {
-    if (!inStock.value) {
+    if (!inStock.value && !allowOversell.value) {
       toast.error('This product is currently out of stock!')
     } else if (hasVariants.value && !selectedVariant.value) {
       toast.warning('Please select all product options first.')
@@ -369,9 +464,14 @@ function addToCart() {
       variant_id: selectedVariant.value?.id || null,
       variant_name: selectedVariant.value?.name || null,
       variant_sku: selectedVariant.value?.sku || null,
-      // Override price with variant price if selected
-      price: selectedVariant.value?.price || productStore.currentProduct.sale_price || productStore.currentProduct.regular_price,
-      stock: selectedVariant.value?.stock ?? productStore.currentProduct.stock
+      // Same resolved price the price block shows (variant price, or the
+      // kg-scaled product rate when the variant carries none)
+      price: displayPrice.value,
+      // kg pools track the product-level pool; unit mode tracks variant stock
+      stock: isKgPool.value
+        ? productStore.currentProduct.stock
+        : (selectedVariant.value?.stock ?? productStore.currentProduct.stock),
+      unit_weight: selectedVariant.value?.unit_weight ?? productStore.currentProduct.weight ?? null
     }
     cartStore.addItem(item, quantity.value)
     const name = selectedVariant.value?.name || productStore.currentProduct.name
@@ -380,8 +480,7 @@ function addToCart() {
 }
 
 function increment() {
-  const max = productStore.currentProduct?.maximum_order || 99
-  if (quantity.value < max) quantity.value++
+  if (quantity.value < maxOrderQty.value) quantity.value++
 }
 
 function decrement() {
@@ -650,13 +749,13 @@ async function toggleWishlist() {
               <div class="mb-6">
                 <div class="flex items-baseline gap-3">
                   <span class="text-3xl lg:text-4xl font-bold text-primary-600">
-                    {{ formatPrice(selectedVariant?.price || productStore.currentProduct.sale_price || productStore.currentProduct.regular_price) }}
+                    {{ formatPrice(displayPrice) }}
                   </span>
                   <span
-                    v-if="productStore.currentProduct.regular_price && parseFloat(selectedVariant?.price || productStore.currentProduct.sale_price || 0) < parseFloat(productStore.currentProduct.regular_price)"
+                    v-if="discountPercentage > 0"
                     class="text-xl text-gray-400 line-through"
                   >
-                    {{ formatPrice(productStore.currentProduct.regular_price) }}
+                    {{ formatPrice(compareAtPrice) }}
                   </span>
                   <span
                     v-if="discountPercentage > 0"
@@ -671,11 +770,11 @@ async function toggleWishlist() {
               <div class="flex items-center gap-2 mb-6">
                 <span
                   class="inline-block w-2.5 h-2.5 rounded-full"
-                  :class="inStock ? 'bg-green-500' : 'bg-red-500'"
+                  :class="inStock ? 'bg-green-500' : (backorderMode ? 'bg-amber-500' : 'bg-red-500')"
                 ></span>
                 <span
                   class="text-sm font-medium"
-                  :class="inStock ? 'text-green-700' : 'text-red-600'"
+                  :class="inStock ? 'text-green-700' : (backorderMode ? 'text-amber-600' : 'text-red-600')"
                 >
                   {{ stockStatusText }}
                 </span>
@@ -686,6 +785,8 @@ async function toggleWishlist() {
               <VariantSelector
                 v-if="hasVariants"
                 :variants="productStore.currentProduct?.variants || []"
+                :stock-unit="productStore.currentProduct?.stock_unit || 'unit'"
+                :stock-pool="parseFloat(productStore.currentProduct?.stock ?? 0)"
                 @update:modelValue="onVariantSelected"
                 @update:selectedAttributes="onAttributesChanged"
                 @update:variantImage="onVariantImageUpdate"
@@ -712,12 +813,12 @@ async function toggleWishlist() {
                     v-model.number="quantity"
                     type="number"
                     min="1"
-                    :max="productStore.currentProduct.maximum_order || 99"
+                    :max="maxOrderQty"
                     class="w-16 h-11 text-center border border-gray-300 rounded-xl font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     @click="increment"
-                    :disabled="quantity >= (productStore.currentProduct.maximum_order || 99)"
+                    :disabled="quantity >= maxOrderQty"
                     class="w-11 h-11 rounded-xl border border-gray-300 flex items-center justify-center text-lg font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

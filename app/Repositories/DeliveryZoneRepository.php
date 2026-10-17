@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\DeliveryZone;
-use App\Models\DeliveryZoneDistrict;
+use App\Models\District;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class DeliveryZoneRepository
@@ -49,38 +49,31 @@ class DeliveryZoneRepository
     }
 
     /**
-     * Find the delivery zone for a given district name.
+     * Find a district record (with its zone) by name.
      */
-    public function findByDistrict(string $district): ?DeliveryZone
+    public function findDistrictByName(string $district): ?District
     {
-        $districtRecord = DeliveryZoneDistrict::where('name', $district)
-            ->where('status', 'active')
+        return District::with('zone')
+            ->where('name', trim($district))
             ->first();
-
-        if (! $districtRecord) {
-            return null;
-        }
-
-        return $this->find($districtRecord->delivery_zone_id);
     }
 
     /**
-     * Sync districts for a delivery zone.
+     * Sync zone membership by district ids.
      *
-     * Existing districts keep their id and status so per-district
-     * edits (rename, inactive) survive a zone form save. Districts
-     * unchecked in the form are removed from this zone.
+     * Districts unchecked in the zone form are unassigned (they remain
+     * global rows so renames, statuses and charge overrides survive).
+     * Checked districts are moved to this zone, keeping all their edits.
+     *
+     * @param  list<int>  $districtIds
      */
-    public function syncDistricts(DeliveryZone $zone, array $districtNames): void
+    public function syncDistricts(DeliveryZone $zone, array $districtIds): void
     {
-        $zone->districts()->whereNotIn('name', $districtNames)->delete();
+        District::where('delivery_zone_id', $zone->id)
+            ->whereNotIn('id', $districtIds)
+            ->update(['delivery_zone_id' => null]);
 
-        foreach ($districtNames as $name) {
-            DeliveryZoneDistrict::updateOrCreate(
-                ['name' => $name],
-                ['delivery_zone_id' => $zone->id]
-            );
-        }
+        District::whereIn('id', $districtIds)->update(['delivery_zone_id' => $zone->id]);
     }
 
     /**
@@ -90,7 +83,7 @@ class DeliveryZoneRepository
      */
     public function getDistricts(?string $search = null)
     {
-        return DeliveryZoneDistrict::with('zone')
+        return District::with('zone')
             ->when($search, function ($query, $search) {
                 $query->where('name', 'like', '%'.$search.'%');
             })
@@ -99,7 +92,7 @@ class DeliveryZoneRepository
             ->withQueryString();
     }
 
-    public function updateDistrict(DeliveryZoneDistrict $district, array $data): DeliveryZoneDistrict
+    public function updateDistrict(District $district, array $data): District
     {
         $district->update($data);
 

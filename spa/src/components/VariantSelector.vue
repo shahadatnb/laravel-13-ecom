@@ -93,7 +93,10 @@
       </div>
       <div class="mt-1 text-green-700 text-xs space-x-4">
         <span v-if="selectedVariant.sku">SKU: {{ selectedVariant.sku }}</span>
-        <span>Stock: {{ selectedVariant.stock ?? 0 }}</span>
+        <span v-if="isKgPool && kgPackWeight > 0">
+          Available: {{ kgPacks }} pack{{ kgPacks === 1 ? '' : 's' }} ({{ kgPackWeight }} kg each)
+        </span>
+        <span v-else>Stock: {{ selectedVariant.stock ?? 0 }}</span>
       </div>
     </div>
     <div
@@ -116,6 +119,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  stockUnit: {
+    type: String,
+    default: 'unit',
+  },
+  stockPool: {
+    type: Number,
+    default: 0,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:selectedAttributes', 'update:variantImage'])
@@ -123,6 +134,18 @@ const emit = defineEmits(['update:modelValue', 'update:selectedAttributes', 'upd
 // ── Variant Selection State ──
 const selectedAttributes = ref({})
 const selectedVariant = ref(null)
+
+const isKgPool = computed(() => props.stockUnit === 'kg')
+
+const kgPackWeight = computed(() => {
+  const weight = parseFloat(selectedVariant.value?.unit_weight ?? 0)
+  return weight > 0 ? weight : null
+})
+
+const kgPacks = computed(() => {
+  if (!isKgPool.value || kgPackWeight.value === null) return 0
+  return Math.floor(props.stockPool / kgPackWeight.value)
+})
 
 // Extract unique attribute keys from all variants (e.g., "Size", "Color")
 const variantAttributeKeys = computed(() => {

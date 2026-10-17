@@ -222,6 +222,14 @@ class SiteSettingController extends Controller
                 continue;
             }
 
+            // Handle boolean settings — an unchecked checkbox is absent from
+            // the payload, so read it explicitly instead of via has().
+            if ($setting->type === 'boolean') {
+                $setting->update(['value' => $request->boolean($key) ? '1' : '0']);
+
+                continue;
+            }
+
             // Handle text/textarea/json settings
             if ($request->has($key)) {
                 $value = $request->input($key);
@@ -249,6 +257,7 @@ class SiteSettingController extends Controller
     public function themeTexts(): View
     {
         $settings = SiteSetting::where('group', 'theme_texts')->pluck('value', 'key')->toArray();
+
         return view('admin.settings.theme-texts', compact('settings'));
     }
 
@@ -264,6 +273,7 @@ class SiteSettingController extends Controller
                 ['value' => $value, 'type' => 'text', 'group' => 'theme_texts']
             );
         }
+
         return redirect()->route('admin.settings.theme-texts')
             ->with('success', 'Theme texts updated successfully.');
     }

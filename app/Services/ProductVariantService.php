@@ -41,6 +41,34 @@ class ProductVariantService
         return [];
     }
 
+    /**
+     * Derive a variant's kilogram weight from its name plus attribute map.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function deriveWeight(?string $name, array $attributes): ?float
+    {
+        return ProductVariant::deriveUnitWeight(array_merge(['name' => $name ?? ''], $attributes));
+    }
+
+    /**
+     * Resolve a variant's kilogram weight: an admin-provided value wins,
+     * otherwise derive it from the name and attribute map.
+     *
+     * @param  array<string, mixed>  $variantData
+     * @param  array<string, mixed>  $attributes
+     */
+    private function resolveWeight(array $variantData, ?string $name, array $attributes): ?float
+    {
+        $explicit = $variantData['unit_weight'] ?? null;
+
+        if (is_numeric($explicit) && (float) $explicit > 0) {
+            return (float) $explicit;
+        }
+
+        return $this->deriveWeight($name, $attributes);
+    }
+
     public function sync(Product $product, array $variants): array
     {
         $existing = $product->variants;
@@ -62,6 +90,7 @@ class ProductVariantService
                     'barcode' => $variantData['barcode'] ?? $existingVariant->barcode,
                     'price' => array_key_exists('price', $variantData) ? $variantData['price'] : $existingVariant->price,
                     'stock' => array_key_exists('stock', $variantData) ? $variantData['stock'] : $existingVariant->stock,
+                    'unit_weight' => $this->resolveWeight($variantData, $variantData['name'] ?? $existingVariant->name, $attrs),
                     'attributes' => $attrs,
                     'sort_order' => $index,
                 ]);
@@ -78,6 +107,7 @@ class ProductVariantService
                 'barcode' => $variantData['barcode'] ?? null,
                 'price' => $variantData['price'] ?? null,
                 'stock' => $variantData['stock'] ?? 0,
+                'unit_weight' => $this->resolveWeight($variantData, $variantData['name'], $attrs),
                 'attributes' => $attrs,
                 'sort_order' => $index,
             ]);

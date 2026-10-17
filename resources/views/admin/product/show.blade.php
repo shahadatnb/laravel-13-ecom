@@ -34,8 +34,14 @@
                         <div class="info-box info-box-sm">
                             <span class="info-box-icon bg-warning"><i class="fas fa-box"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">Stock</span>
-                                <span class="info-box-number">{{ number_format($product->stock) }}</span>
+                                <span class="info-box-text">Stock{{ $product->usesWeightPool() ? ' (kg pool)' : '' }}</span>
+                                <span class="info-box-number">
+                                    @if($product->usesWeightPool())
+                                        {{ rtrim(rtrim(number_format($product->stock, 3), '0'), '.') }}
+                                    @else
+                                        {{ number_format($product->stock) }}
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -68,6 +74,9 @@
                 @if($product->variants->isNotEmpty())
                 <div class="mt-4">
                     <h4><i class="fas fa-layer-group mr-1"></i> Variants</h4>
+                    @if($product->usesWeightPool())
+                        <p class="text-muted small mb-2">Kilogram pool: stock is shared from the product's {{ rtrim(rtrim(number_format($product->stock, 3), '0'), '.') }} kg pool — each variant shows how many packs it can fulfill.</p>
+                    @endif
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped">
                             <thead>
@@ -75,7 +84,7 @@
                                     <th>Variant</th>
                                     <th>SKU</th>
                                     <th>Price</th>
-                                    <th class="text-right">Stock</th>
+                                    <th class="text-right">{{ $product->usesWeightPool() ? 'Pack Stock' : 'Stock' }}</th>
                                     <th>Status</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
@@ -84,6 +93,14 @@
                                 @foreach($product->variants as $variant)
                                 @php
                                     $stock = $variant->stock ?? 0;
+                                    $isKgPool = $product->usesWeightPool();
+                                    $unitWeight = $variant->resolveUnitWeight();
+                                    $packs = $isKgPool
+                                        ? (($unitWeight !== null && $unitWeight > 0) ? (int) floor($product->stock / $unitWeight) : 0)
+                                        : null;
+                                    $poolStatus = $product->stock <= 0
+                                        ? 'out'
+                                        : ($product->stock <= ($product->minimum_stock ?? 0) ? 'low' : 'in');
                                 @endphp
                                 <tr>
                                     <td>
@@ -104,12 +121,31 @@
                                     <td><span class="font-mono">{{ $variant->sku ?? '—' }}</span></td>
                                     <td>{{ number_format($variant->price, 2) }}</td>
                                     <td class="text-right">
-                                        <a href="{{ route('admin.stock.variant-show', [$product, $variant]) }}" class="font-weight-bold {{ $stock > 0 ? 'text-success' : 'text-danger' }}">
-                                            {{ number_format($stock) }}
-                                        </a>
+                                        @if($isKgPool)
+                                            <span class="font-weight-bold {{ $packs > 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ $packs }} packs
+                                            </span>
+                                            @if($unitWeight !== null)
+                                                <br><small class="text-muted">{{ rtrim(rtrim(number_format($unitWeight, 3), '0'), '.') }} kg each</small>
+                                            @else
+                                                <br><small class="text-danger">weight not set</small>
+                                            @endif
+                                        @else
+                                            <a href="{{ route('admin.stock.variant-show', [$product, $variant]) }}" class="font-weight-bold {{ $stock > 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format($stock) }}
+                                            </a>
+                                        @endif
                                     </td>
                                     <td class="text-center">
-                                        @if($stock <= 0)
+                                        @if($isKgPool)
+                                            @if($poolStatus === 'out')
+                                                <span class="badge badge-danger">Out of Stock</span>
+                                            @elseif($poolStatus === 'low')
+                                                <span class="badge badge-warning">Low Stock</span>
+                                            @else
+                                                <span class="badge badge-success">In Stock</span>
+                                            @endif
+                                        @elseif($stock <= 0)
                                             <span class="badge badge-danger">Out of Stock</span>
                                         @elseif($stock <= ($product->minimum_stock ?? 0))
                                             <span class="badge badge-warning">Low Stock</span>

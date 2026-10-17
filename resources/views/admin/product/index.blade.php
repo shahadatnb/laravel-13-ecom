@@ -225,9 +225,14 @@
                                 <td data-col="stock_status">
                                     <div class="d-flex flex-wrap gap-1 align-items-center">
                                         @php
-                                            // For variable products, sum up variant stock instead of product-level stock
+                                            // Kg pools track product-level stock; variable unit products
+                                            // sum up variant stock instead.
+                                            $isKg = $product->usesWeightPool();
                                             $isVariable = $product->product_type === 'variable' || ($product->variants && $product->variants->count() > 0);
-                                            if ($isVariable && $product->variants && $product->variants->count() > 0) {
+                                            if ($isKg) {
+                                                $stock = $product->stock;
+                                                $variantCount = $product->variants ? $product->variants->count() : 0;
+                                            } elseif ($isVariable && $product->variants && $product->variants->count() > 0) {
                                                 $stock = (int) $product->variants->sum('stock');
                                                 $variantCount = $product->variants->count();
                                             } else {
@@ -247,7 +252,7 @@
                                             }
                                         @endphp
                                         <span class="badge {{ $stockBadgeClass }}" style="font-size:10px;font-weight:600;padding:3px 8px;" title="Stock: {{ $stock }}{{ $variantCount > 0 ? ' (across '.$variantCount.' variants)' : '' }}">
-                                            <i class="fas fa-box"></i> {{ $stockLabel }} ({{ $stock }})
+                                            <i class="fas fa-box"></i> {{ $stockLabel }} ({{ rtrim(rtrim(number_format((float) $stock, 3), '0'), '.') }}{{ $isKg ? ' kg' : '' }})
                                             @if($variantCount > 0)
                                                 <span class="ml-1" style="opacity:0.7;font-size:9px;">{{ $variantCount }} var.</span>
                                             @endif

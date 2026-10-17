@@ -23,7 +23,9 @@ class DeliveryZoneController extends Controller
 
     public function create(): View
     {
-        return view('admin.delivery-zone.createOrEdit');
+        $districtsByDivision = $this->deliveryZoneService->districtChoices();
+
+        return view('admin.delivery-zone.createOrEdit', compact('districtsByDivision'));
     }
 
     public function store(StoreDeliveryZoneRequest $request): RedirectResponse
@@ -38,8 +40,9 @@ class DeliveryZoneController extends Controller
     public function edit(DeliveryZone $deliveryZone): View
     {
         $deliveryZone->load('districts');
+        $districtsByDivision = $this->deliveryZoneService->districtChoices();
 
-        return view('admin.delivery-zone.createOrEdit', compact('deliveryZone'));
+        return view('admin.delivery-zone.createOrEdit', compact('deliveryZone', 'districtsByDivision'));
     }
 
     public function update(UpdateDeliveryZoneRequest $request, DeliveryZone $deliveryZone): RedirectResponse

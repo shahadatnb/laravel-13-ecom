@@ -35,9 +35,9 @@ class InventoryAdjustment extends Model
     protected function casts(): array
     {
         return [
-            'quantity_before' => 'integer',
-            'quantity_change' => 'integer',
-            'quantity_after' => 'integer',
+            'quantity_before' => 'float',
+            'quantity_change' => 'float',
+            'quantity_after' => 'float',
             'requires_approval' => 'boolean',
             'approved_at' => 'datetime',
         ];

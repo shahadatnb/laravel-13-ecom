@@ -403,6 +403,22 @@ document.addEventListener('DOMContentLoaded', function() {
         return result;
     }
 
+    /**
+     * Parse a kilogram weight from free text ("5kg", ".5 কেজি", "500g",
+     * "৫০০ গ্রাম"). Grams convert to kg; returns null when no weight found.
+     * Mirrors ProductVariant::deriveUnitWeight() on the server.
+     */
+    function parseWeightKg(text) {
+        if (!text) return null;
+        var bengaliDigits = {'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+        text = String(text).replace(/[০-৯]/g, function(d) { return bengaliDigits[d]; });
+        var match = text.match(/(\d+(?:[.,]\d+)?|[.,]\d+)\s*(kg|কেজি|গ্রাম|grams?|gms?|gs?)(?![a-zA-Z])/i);
+        if (!match) return null;
+        var value = parseFloat(match[1].replace(',', '.'));
+        if (isNaN(value)) return null;
+        return /^(?:গ্রাম|grams?|gms?|gs?)$/i.test(match[2]) ? value / 1000 : value;
+    }
+
     function renderVariants(combinations) {
         if (combinations.length === 0) {
             variantsContainer.style.display = 'none';
@@ -457,6 +473,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var priceTd = document.createElement('td');
             priceTd.innerHTML = '<input type="number" step="0.01" name="variants[' + index + '][price]" class="form-control" placeholder="0.00" />';
             tr.appendChild(priceTd);
+            var parsedWeight = parseWeightKg(Object.values(combo).join(' '));
+            var weightTd = document.createElement('td');
+            weightTd.innerHTML = '<input type="number" step="0.001" min="0" name="variants[' + index + '][unit_weight]" class="form-control variant-weight-input" value="' + (parsedWeight !== null ? parsedWeight : '') + '" placeholder="kg" />' +
+                '<small class="text-muted variant-weight-hint" style="font-size:10px;">' + (parsedWeight !== null ? '= ' + parsedWeight + ' kg / sale' : 'name it like "5kg" or set here') + '</small>';
+            tr.appendChild(weightTd);
             var stockTd = document.createElement('td');
             stockTd.innerHTML = '<input type="number" name="variants[' + index + '][stock]" class="form-control" value="0" placeholder="0" />';
             tr.appendChild(stockTd);

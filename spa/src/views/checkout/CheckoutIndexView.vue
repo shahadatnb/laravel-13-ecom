@@ -50,20 +50,9 @@ const taxRate = computed(() => {
   return isNaN(val) ? 5 : val
 })
 
-// Shipping charge: from delivery zone API if district selected, else free threshold
-const shipping = computed(() => {
-  // If district-based charge is available, use it
-  if (districtCharge.value !== null) {
-    // Free shipping for COD threshold if charge is 0 or above threshold
-    if (districtCharge.value === 0) return 0
-    return districtCharge.value
-  }
-  // Fallback to settings-based free shipping
-  const freeShippingThreshold = parseFloat(siteStore.getSetting('free_shipping_threshold', '5000')) || 5000
-  if (subtotal.value >= freeShippingThreshold) return 0
-  const defaultRate = parseFloat(siteStore.getSetting('shipping_rate', '60')) || 60
-  return defaultRate
-})
+// Shipping charge: always from the delivery-zone calculate API.
+// Server recalculates it again on order placement.
+const shipping = computed(() => districtCharge.value ?? 0)
 const tax = computed(() => subtotal.value * (taxRate.value / 100))
 const total = computed(() => subtotal.value + shipping.value + tax.value)
 
@@ -72,7 +61,10 @@ async function fetchDistricts() {
   try {
     const response = await DeliveryZoneService.getDistricts()
     if (response.data.success && response.data.data) {
-      districts.value = response.data.data
+      districts.value = response.data.data.map(d => ({
+        ...d,
+        charge_label: d.charge == null ? '' : (Number(d.charge) === 0 ? 'Free' : formatPrice(d.charge))
+      }))
     }
   } catch (e) {
     console.warn('Could not load delivery districts:', e)
@@ -119,6 +111,13 @@ watch(selectedDistrict, (val) => {
   }
 })
 
+// Recalculate when the order amount changes (free-delivery threshold)
+watch(subtotal, () => {
+  if (selectedDistrict.value) {
+    calculateShipping()
+  }
+})
+
 // Initialize currency settings and fetch districts on mount
 onMounted(() => {
   if (siteStore.settings) {
@@ -131,6 +130,14 @@ async function placeOrder() {
   if (!hasItems.value) { toast.error('Your cart is empty!'); return }
   if (!form.value.name || !form.value.phone || !form.value.address || !selectedDistrict.value) {
     toast.warning('Please fill in all required shipping fields.')
+    return
+  }
+  if (districtLoading.value) {
+    toast.warning('Delivery charge is still being calculated. Please wait a moment.')
+    return
+  }
+  if (districtCharge.value === null) {
+    toast.warning(districtError.value || 'Delivery is not available for the selected district.')
     return
   }
   // Guest checkout email validation (optional)
@@ -156,8 +163,6 @@ async function placeOrder() {
     const orderData = {
       items,
       guest_email: authStore.isAuthenticated ? undefined : guestEmail.value,
-      shipping_charge: shipping.value,
-      tax: tax.value,
       payment_method: form.value.payment_method,
       currency: 'USD',
       shipping_address: {
@@ -305,7 +310,7 @@ async function placeOrder() {
                   :required="true"
                   search-key="name"
                   value-key="name"
-                  sub-key="zone_name"
+                  sub-key="charge_label"
                 />
                 <p v-if="districtError" class="text-sm text-red-500 mt-1">{{ districtError }}</p>
                 <p v-else-if="districtLoading" class="text-sm text-gray-400 mt-1">Calculating shipping...</p>

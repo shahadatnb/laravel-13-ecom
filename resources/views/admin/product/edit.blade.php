@@ -666,6 +666,12 @@ document.addEventListener('DOMContentLoaded', function() {
             priceTd.innerHTML = '<input type="number" step="0.01" name="variants[' + index + '][price]" class="form-control form-control-sm" value="' + (variant.price || '0.00') + '" placeholder="0.00" />';
             tr.appendChild(priceTd);
 
+            // Weight (kg deducted per sale; auto-derived from name, editable here)
+            var weightValue = (variant.unit_weight !== null && variant.unit_weight !== undefined && variant.unit_weight !== '') ? variant.unit_weight : '';
+            var weightTd = document.createElement('td');
+            weightTd.innerHTML = '<input type="number" step="0.001" min="0" name="variants[' + index + '][unit_weight]" class="form-control form-control-sm variant-weight-input" value="' + weightValue + '" placeholder="kg" />';
+            tr.appendChild(weightTd);
+
 // Stock (clickable — managed via Stock module)
 var stockTd = document.createElement('td');
 var stockLink = stockTd.appendChild(document.createElement('a'));
@@ -744,7 +750,8 @@ tr.appendChild(stockTd);
     if (variantsTableBody) {
         variantsTableBody.addEventListener('change', function(e) {
             if (e.target.matches('input[name$="[sku]"]') ||
-                e.target.matches('input[name$="[price]"]')) {
+                e.target.matches('input[name$="[price]"]') ||
+                e.target.matches('input[name$="[unit_weight]"]')) {
                 var input = e.target;
                 var tr = input.closest('tr');
                 var variantId = tr.getAttribute('data-variant-id');
@@ -754,6 +761,7 @@ tr.appendChild(stockTd);
 
                 if (name.includes('[sku]')) fieldName = 'sku';
                 else if (name.includes('[price]')) fieldName = 'price';
+                else if (name.includes('[unit_weight]')) fieldName = 'unit_weight';
 
                 if (variantId && fieldName) {
                     $.ajax({

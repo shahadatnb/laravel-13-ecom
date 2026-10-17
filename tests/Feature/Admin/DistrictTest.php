@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\DeliveryZone;
+use App\Models\District;
 use App\Models\User;
 
 uses()->in('Feature\\Admin');
@@ -16,8 +17,10 @@ beforeEach(function () {
         'status' => 'active',
     ]);
 
-    $this->district = $this->zone->districts()->create([
+    $this->district = District::create([
         'name' => 'Gazipur',
+        'division' => 'Dhaka Division',
+        'delivery_zone_id' => $this->zone->id,
         'status' => 'active',
     ]);
 });
@@ -31,7 +34,7 @@ test('admin can view district list', function () {
 });
 
 test('district list can be searched by name', function () {
-    $this->zone->districts()->create(['name' => 'Sylhet', 'status' => 'active']);
+    District::create(['name' => 'Sylhet', 'division' => 'Sylhet Division', 'status' => 'active']);
 
     $response = $this->get(route('admin.districts.index', ['q' => 'Sy']));
 
@@ -53,6 +56,7 @@ test('admin can open the district edit form', function () {
 test('admin can update a district', function () {
     $response = $this->put(route('admin.districts.update', $this->district->id), [
         'name' => 'Gazipur Sadar',
+        'division' => 'Dhaka Division',
         'delivery_zone_id' => $this->zone->id,
         'status' => 'inactive',
     ]);
@@ -60,10 +64,44 @@ test('admin can update a district', function () {
     $response->assertRedirect(route('admin.districts.index'));
     $response->assertSessionHas('success', 'District updated successfully.');
 
-    $this->assertDatabaseHas('delivery_zone_districts', [
+    $this->assertDatabaseHas('districts', [
         'id' => $this->district->id,
         'name' => 'Gazipur Sadar',
         'status' => 'inactive',
+    ]);
+});
+
+test('admin can set a per-district charge override', function () {
+    $response = $this->put(route('admin.districts.update', $this->district->id), [
+        'name' => 'Gazipur',
+        'division' => 'Dhaka Division',
+        'delivery_zone_id' => $this->zone->id,
+        'charge' => 45,
+        'status' => 'active',
+    ]);
+
+    $response->assertRedirect(route('admin.districts.index'));
+
+    $this->assertDatabaseHas('districts', [
+        'id' => $this->district->id,
+        'charge' => 45,
+    ]);
+});
+
+test('district zone is optional and charge override can be cleared', function () {
+    $response = $this->put(route('admin.districts.update', $this->district->id), [
+        'name' => 'Gazipur',
+        'division' => 'Dhaka Division',
+        'delivery_zone_id' => null,
+        'status' => 'active',
+    ]);
+
+    $response->assertRedirect(route('admin.districts.index'));
+
+    $this->assertDatabaseHas('districts', [
+        'id' => $this->district->id,
+        'delivery_zone_id' => null,
+        'charge' => null,
     ]);
 });
 
@@ -74,7 +112,7 @@ test('district name must be unique', function () {
         'charge' => 120,
         'status' => 'active',
     ]);
-    $otherZone->districts()->create(['name' => 'Sylhet', 'status' => 'active']);
+    District::create(['name' => 'Sylhet', 'division' => 'Sylhet Division', 'delivery_zone_id' => $otherZone->id, 'status' => 'active']);
 
     $response = $this->put(route('admin.districts.update', $this->district->id), [
         'name' => 'Sylhet',
@@ -99,21 +137,21 @@ test('admin can toggle district status', function () {
     $response = $this->post(route('admin.districts.toggle-status', $this->district->id));
 
     $response->assertRedirect(route('admin.districts.index'));
-    $this->assertDatabaseHas('delivery_zone_districts', [
+    $this->assertDatabaseHas('districts', [
         'id' => $this->district->id,
         'status' => 'inactive',
     ]);
 
     $this->post(route('admin.districts.toggle-status', $this->district->id));
 
-    $this->assertDatabaseHas('delivery_zone_districts', [
+    $this->assertDatabaseHas('districts', [
         'id' => $this->district->id,
         'status' => 'active',
     ]);
 });
 
 test('inactive district is hidden from the frontend district list', function () {
-    $this->zone->districts()->create(['name' => 'Dhaka', 'status' => 'active']);
+    District::create(['name' => 'Dhaka', 'division' => 'Dhaka Division', 'delivery_zone_id' => $this->zone->id, 'status' => 'active']);
 
     $this->post(route('admin.districts.toggle-status', $this->district->id));
 
@@ -140,7 +178,7 @@ test('saving a zone does not reset edited district statuses', function () {
 
     $response = $this->put(route('admin.delivery-zones.update', $this->zone->id), [
         'name' => 'Inside Dhaka',
-        'districts' => ['Gazipur'],
+        'districts' => [$this->district->id],
         'charge' => 60,
         'minimum_order_amount' => 1000,
         'status' => 'active',
@@ -148,17 +186,18 @@ test('saving a zone does not reset edited district statuses', function () {
 
     $response->assertRedirect(route('admin.delivery-zones.index'));
 
-    $this->assertDatabaseHas('delivery_zone_districts', [
+    $this->assertDatabaseHas('districts', [
         'id' => $this->district->id,
         'name' => 'Gazipur',
         'status' => 'inactive',
+        'delivery_zone_id' => $this->zone->id,
     ]);
 });
 
-test('district data is missing required fields', function () {
+test('district name is required', function () {
     $response = $this->put(route('admin.districts.update', $this->district->id), [
         'status' => 'active',
     ]);
 
-    $response->assertSessionHasErrors(['name', 'delivery_zone_id']);
+    $response->assertSessionHasErrors(['name']);
 });

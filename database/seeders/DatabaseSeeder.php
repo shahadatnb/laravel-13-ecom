@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ProductAttributeSeeder::class,
             ProductSeeder::class,
+            DistrictSeeder::class,
             DeliveryZoneSeeder::class,
         ]);
     }

@@ -125,9 +125,18 @@ async function fetchProducts() {
 function addToCart(product) {
   const sv = selectedVariants[product.id]
   if (sv && sv.price) {
-    cartStore.addItem({ ...product, variant_id: sv.id, variant_name: sv.name, variant_sku: sv.sku, price: sv.price })
+    cartStore.addItem({
+      ...product,
+      variant_id: sv.id,
+      variant_name: sv.name,
+      variant_sku: sv.sku,
+      price: sv.price,
+      // kg pools track the product-level pool; unit mode tracks variant stock
+      stock: product.stock_unit === 'kg' ? product.stock : (sv.stock ?? product.stock),
+      unit_weight: sv.unit_weight ?? product.weight ?? null
+    })
   } else {
-    cartStore.addItem(product)
+    cartStore.addItem({ ...product, unit_weight: product.weight ?? null })
   }
   toast.success(`${product.name}${sv ? ' (' + sv.name + ')' : ''} added to cart!`)
 }

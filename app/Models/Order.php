@@ -34,6 +34,8 @@ class Order extends Model
         'coupon_discount',
         'notes',
         'admin_notes',
+        'stock_deducted_at',
+        'stock_restocked_at',
         'created_by',
         'updated_by',
     ];
@@ -51,6 +53,8 @@ class Order extends Model
             'coupon_discount' => 'decimal:2',
             'shipping_address' => 'array',
             'billing_address' => 'array',
+            'stock_deducted_at' => 'datetime',
+            'stock_restocked_at' => 'datetime',
         ];
     }
 
@@ -113,7 +117,6 @@ class Order extends Model
     {
         return $this->belongsTo(Customer::class);
     }
-
 
     public function items(): HasMany
     {

@@ -29,6 +29,7 @@ class Product extends Model
         'wholesale_price',
         'cost_price',
         'stock',
+        'stock_unit',
         'minimum_stock',
         'maximum_order',
         'weight',
@@ -52,7 +53,7 @@ class Product extends Model
     {
         return [
             'featured' => 'boolean',
-            'stock' => 'integer',
+            'stock' => 'float',
             'minimum_stock' => 'integer',
             'maximum_order' => 'integer',
             'regular_price' => 'decimal:2',
@@ -98,11 +99,24 @@ class Product extends Model
         return $this->hasMany(ProductGallery::class, 'product_variant_id');
     }
 
-    public function getTotalStockAttribute(): int
+    /**
+     * Whether this product's stock is managed as a bulk kilogram pool.
+     */
+    public function usesWeightPool(): bool
     {
+        return $this->stock_unit === 'kg';
+    }
+
+    public function getTotalStockAttribute(): float|int
+    {
+        if ($this->usesWeightPool()) {
+            return (float) $this->stock;
+        }
+
         if ($this->product_type === 'simple') {
             return (int) $this->stock;
         }
+
         return (int) $this->variants->sum('stock');
     }
 

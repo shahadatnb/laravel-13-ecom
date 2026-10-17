@@ -30,34 +30,36 @@ class InventoryController extends Controller
         $stats = $this->inventoryService->getInventoryStatistics();
         $warehouses = Warehouse::active()->get();
 
-        // Fetch all unique variant attributes for filter dropdowns
+        // Fetch all unique variant attributes for filter dropdowns.
+        // Decoded in PHP rather than via JSON_KEYS/JSON_EXTRACT raw SQL —
+        // the alias `keys` is a MySQL reserved word and the JSON functions
+        // break on rows whose attributes column holds invalid JSON.
         $rawAttributes = DB::table('product_variants')
             ->whereNotNull('attributes')
-            ->where('attributes', '!=', 'null')
             ->where('attributes', '!=', '')
-            ->selectRaw("JSON_KEYS(attributes) as keys")
-            ->get();
+            ->where('attributes', '!=', 'null')
+            ->pluck('attributes');
 
         $variantAttributes = [];
-        foreach ($rawAttributes as $row) {
-            $keys = json_decode($row->keys, true);
-            if (!is_array($keys)) continue;
-            foreach ($keys as $key) {
-                $values = DB::table('product_variants')
-                    ->whereNotNull('attributes')
-                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(attributes, ?)) as val", ["$.\"{$key}\""])
-                    ->whereRaw("JSON_EXTRACT(attributes, ?) IS NOT NULL", ["$.\"{$key}\""])
-                    ->distinct()
-                    ->pluck('val')
-                    ->filter()
-                    ->values()
-                    ->toArray();
+        foreach ($rawAttributes as $encoded) {
+            $decoded = json_decode($encoded, true);
+            if (! is_array($decoded)) {
+                continue;
+            }
 
-                if (!empty($values)) {
-                    $variantAttributes[$key] = $values;
+            foreach ($decoded as $attrName => $attrValue) {
+                if ($attrValue === null || $attrValue === '') {
+                    continue;
                 }
+
+                $variantAttributes[$attrName][(string) $attrValue] = true;
             }
         }
+
+        $variantAttributes = array_map(
+            fn (array $values) => array_keys($values),
+            $variantAttributes,
+        );
 
         return view('admin.inventory.index', compact('inventory', 'stats', 'warehouses', 'variantAttributes'));
     }

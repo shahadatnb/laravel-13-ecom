@@ -28,8 +28,6 @@ class OrderRequest extends FormRequest
 
             'coupon_code' => ['nullable', 'string', 'max:50'],
             'discount' => ['nullable', 'numeric', 'min:0'],
-            'tax' => ['nullable', 'numeric', 'min:0'],
-            'shipping_charge' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'max:10'],
             'payment_method' => ['nullable', 'string', 'max:50'],
 
@@ -38,7 +36,7 @@ class OrderRequest extends FormRequest
             'shipping_address.phone' => ['required_with:shipping_address', 'string', 'max:20'],
             'shipping_address.address_line_1' => ['required_with:shipping_address', 'string', 'max:255'],
             'shipping_address.city' => ['nullable', 'string', 'max:100'],
-            'shipping_address.district' => ['nullable', 'string', 'max:100'],
+            'shipping_address.district' => ['required_with:shipping_address', 'string', 'max:100'],
             'shipping_address.state' => ['nullable', 'string', 'max:100'],
             'shipping_address.postal_code' => ['nullable', 'string', 'max:20'],
             'shipping_address.country' => ['nullable', 'string', 'max:100'],
@@ -67,6 +65,7 @@ class OrderRequest extends FormRequest
             'items.*.unit_price.min' => 'Unit price cannot be negative.',
             'items.*.quantity.required' => 'Quantity is required.',
             'items.*.quantity.min' => 'Quantity must be at least 1.',
+            'shipping_address.district.required_with' => 'A delivery district is required to calculate shipping.',
         ];
     }
 }

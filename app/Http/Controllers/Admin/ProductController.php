@@ -408,13 +408,15 @@ class ProductController extends Controller
             // Create new variant — autofill SKU and price from the product's values
             $variantSku = $variant['sku'] ?? $product->sku;
             $variantPrice = $variant['price'] ?? ($product->sale_price ?? $product->regular_price ?? 0);
+            $variantName = $variant['name'] ?? null;
             $variantData = [
                 'product_id' => $product->id,
-                'name' => $variant['name'] ?? null,
+                'name' => $variantName,
                 'sku' => $variantSku ?? null,
                 'barcode' => $variant['barcode'] ?? null,
                 'price' => $variantPrice ?? 0,
                 'stock' => $variant['stock'] ?? 0,
+                'unit_weight' => ProductVariant::deriveUnitWeight(array_merge(['name' => $variantName ?? ''], $attributes)),
                 'attributes' => json_encode($attributes),
                 'sort_order' => DB::table('product_variants')
                     ->where('product_id', $product->id)
@@ -474,16 +476,21 @@ class ProductController extends Controller
     }
 
     /**
-     * Update a single variant field (sku, price, stock) via AJAX (edit page).
+     * Update a single variant field (sku, price, unit_weight) via AJAX (edit page).
      */
     public function updateVariantField(Product $product): JsonResponse
     {
         $request = request();
         $request->validate([
             'variant_id' => 'required|integer|exists:product_variants,id',
-            'field' => 'required|string|in:sku,price',
+            'field' => 'required|string|in:sku,price,unit_weight',
             'value' => 'nullable',
         ]);
+
+        if ($request->input('field') === 'unit_weight') {
+            $request->merge(['value' => $request->input('value') === '' ? null : $request->input('value')]);
+            $request->validate(['value' => 'nullable|numeric|min:0']);
+        }
 
         $variant = ProductVariant::where('id', $request->input('variant_id'))
             ->where('product_id', $product->id)

@@ -1,19 +1,37 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { useSiteStore } from '@/stores/site'
 import { useToast } from 'vue-toastification'
 import { formatPrice } from '@/utils/currency'
 import { getImageUrl } from '@/utils/image'
 
 const cartStore = useCartStore()
+const siteStore = useSiteStore()
 const toast = useToast()
 
-function updateQuantity(productId, quantity) {
-  cartStore.updateQuantity(productId, quantity)
+// Max purchasable quantity for a cart line: kg pools are limited by
+// floor(pool / unit_weight), unit lines by their stock count.
+// Overselling disables the cap (returns null = unlimited).
+function itemMaxQty(item) {
+  if (siteStore.getSetting('allow_oversell') === '1') return null
+  if (item.stock_unit === 'kg') {
+    return item.unit_weight > 0 ? Math.max(1, Math.floor((item.stock ?? 0) / item.unit_weight)) : null
+  }
+  return typeof item.stock === 'number' ? Math.max(1, item.stock) : null
 }
 
-function removeItem(productId) {
-  cartStore.removeItem(productId)
+function updateQuantity(item, quantity) {
+  const max = itemMaxQty(item)
+  if (max !== null && quantity > max) {
+    quantity = max
+    toast.warning(`Only ${max} available in stock`)
+  }
+  cartStore.updateQuantity(item.id, quantity, item.variant_id ?? null)
+}
+
+function removeItem(item) {
+  cartStore.removeItem(item.id, item.variant_id ?? null)
   toast.success('Item removed from cart')
 }
 
@@ -31,7 +49,7 @@ function clearCart() {
       <!-- Cart Items -->
       <div class="lg:col-span-2">
         <div class="bg-white rounded-lg shadow-md">
-          <div v-for="item in cartStore.items" :key="item.id" class="p-6 border-b last:border-b-0">
+          <div v-for="item in cartStore.items" :key="`${item.id}-${item.variant_id ?? 'base'}`" class="p-6 border-b last:border-b-0">
             <div class="flex items-center gap-6">
               <div class="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
                 <img
@@ -45,12 +63,13 @@ function clearCart() {
               </div>
               <div class="flex-1">
                 <h3 class="font-semibold text-lg">{{ item.name }}</h3>
+                <p v-if="item.variant_name" class="text-sm text-gray-500 mt-0.5">{{ item.variant_name }}</p>
                 <p class="text-primary-600 font-bold text-xl mt-1">{{ formatPrice(item.price) }}</p>
               </div>
               <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2">
                   <button
-                    @click="updateQuantity(item.id, item.quantity - 1)"
+                    @click="updateQuantity(item, item.quantity - 1)"
                     class="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300"
                     :disabled="item.quantity <= 1"
                     aria-label="Decrease quantity"
@@ -59,14 +78,15 @@ function clearCart() {
                   </button>
                   <span class="w-8 text-center font-semibold tabular-nums">{{ item.quantity }}</span>
                   <button
-                    @click="updateQuantity(item.id, item.quantity + 1)"
+                    @click="updateQuantity(item, item.quantity + 1)"
                     class="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300"
+                    :disabled="itemMaxQty(item) !== null && item.quantity >= itemMaxQty(item)"
                     aria-label="Increase quantity"
                   >
                     +
                   </button>
                 </div>
-                <button @click="removeItem(item.id)" class="text-red-500 hover:text-red-700" aria-label="Remove item">
+                <button @click="removeItem(item)" class="text-red-500 hover:text-red-700" aria-label="Remove item">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
               </div>

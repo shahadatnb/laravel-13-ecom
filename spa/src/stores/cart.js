@@ -50,22 +50,29 @@ export const useCartStore = defineStore('cart', () => {
         price: price,
         thumbnail: product.thumbnail || product.image || product.images?.[0]?.image || null,
         sku: product.sku || null,
+        stock: product.stock ?? 0,
+        stock_unit: product.stock_unit || 'unit',
+        unit_weight: product.unit_weight ?? product.weight ?? null,
         quantity: quantity
       })
     }
     saveCartToStorage(items.value)
   }
 
-  function removeItem(productId) {
-    const index = items.value.findIndex(item => item.id === productId)
+  function removeItem(productId, variantId = null) {
+    const index = items.value.findIndex(
+      item => item.id === productId && (item.variant_id ?? null) === (variantId ?? null)
+    )
     if (index > -1) {
       items.value.splice(index, 1)
     }
     saveCartToStorage(items.value)
   }
 
-  function updateQuantity(productId, quantity) {
-    const item = items.value.find(item => item.id === productId)
+  function updateQuantity(productId, quantity, variantId = null) {
+    const item = items.value.find(
+      item => item.id === productId && (item.variant_id ?? null) === (variantId ?? null)
+    )
     if (item) {
       item.quantity = Math.max(1, quantity)
     }

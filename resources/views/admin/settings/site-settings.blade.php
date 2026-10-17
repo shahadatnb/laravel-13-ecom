@@ -120,6 +120,16 @@ $(function() {
                                                 <small class="text-muted d-block mt-1">{{ $currentTheme['description'] }}</small>
                                             @endif
 
+                                        @elseif($setting->type === 'boolean')
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input"
+                                                    id="{{ $setting->key }}" name="{{ $setting->key }}" value="1"
+                                                    {{ old($setting->key, $setting->value) == '1' ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="{{ $setting->key }}">
+                                                    {{ old($setting->key, $setting->value) == '1' ? 'Enabled' : 'Disabled' }}
+                                                </label>
+                                            </div>
+
                                         @else
                                             <input type="text" name="{{ $setting->key }}" id="{{ $setting->key }}"
                                                 class="form-control @error($setting->key) is-invalid @enderror"

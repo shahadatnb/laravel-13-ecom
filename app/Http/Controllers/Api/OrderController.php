@@ -103,8 +103,6 @@ class OrderController extends Controller
             'items' => $request->input('items'),
             'coupon_code' => $request->input('coupon_code'),
             'discount' => $request->input('discount', 0),
-            'tax' => $request->input('tax', 0),
-            'shipping_charge' => $request->input('shipping_charge', 0),
             'currency' => $request->input('currency', 'BDT'),
             'payment_method' => $request->input('payment_method'),
             'shipping_address' => $request->input('shipping_address'),

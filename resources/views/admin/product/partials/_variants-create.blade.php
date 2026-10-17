@@ -170,12 +170,21 @@
                                 @endforeach
                                 <th>SKU</th>
                                 <th>Price</th>
+                                <th>
+                                    Weight (kg)
+                                    <small class="d-block text-muted" style="font-size: 11px;">Kg deducted per sale</small>
+                                </th>
                                 <th>Stock</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="variants-table-body"></tbody>
                     </table>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-weight text-info"></i>
+                        Weight auto-fills from the variant name, e.g. "5kg", "500g", "৫ কেজি" — or set it manually.
+                        For a sack named "বস্তা (50kg)", each sale deducts 50 kg from the product's kilogram pool.
+                    </small>
                 </div>
             </div>
         </div>

@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\DeliveryZone;
-use App\Models\DeliveryZoneDistrict;
+use App\Models\District;
+use App\Models\SiteSetting;
 use App\Repositories\DeliveryZoneRepository;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -21,39 +22,15 @@ class DeliveryZoneService
         return $this->deliveryZoneRepository->find($id);
     }
 
-    /**
-     * Auto-derive the zone type from its districts.
-     * If any district is in Greater Dhaka, it's inside_dhaka, otherwise outside_dhaka.
-     */
-    private function deriveType(array $data): string
-    {
-        if (! empty($data['type'])) {
-            return $data['type'];
-        }
-
-        $insideDhakaDistricts = [
-            'Dhaka', 'Gazipur', 'Narayanganj', 'Munshiganj',
-            'Manikganj', 'Narsingdi', 'Madaripur', 'Shariatpur',
-            'Tangail', 'Kishoreganj', 'Faridpur', 'Gopalganj', 'Rajbari',
-        ];
-
-        $districts = $data['districts'] ?? [];
-        foreach ($districts as $district) {
-            if (in_array($district, $insideDhakaDistricts)) {
-                return 'inside_dhaka';
-            }
-        }
-
-        return 'outside_dhaka';
-    }
-
     public function create(array $data): DeliveryZone
     {
-        $data['type'] = $this->deriveType($data);
+        $districtIds = $data['districts'] ?? [];
+        unset($data['districts']);
+
         $zone = $this->deliveryZoneRepository->create($data);
 
-        if (! empty($data['districts'])) {
-            $this->deliveryZoneRepository->syncDistricts($zone, $data['districts']);
+        if (! empty($districtIds)) {
+            $this->deliveryZoneRepository->syncDistricts($zone, $districtIds);
         }
 
         return $zone->load('districts');
@@ -61,11 +38,13 @@ class DeliveryZoneService
 
     public function update(DeliveryZone $deliveryZone, array $data): DeliveryZone
     {
-        $data['type'] = $this->deriveType($data);
+        $districtIds = $data['districts'] ?? null;
+        unset($data['districts']);
+
         $zone = $this->deliveryZoneRepository->update($deliveryZone, $data);
 
-        if (array_key_exists('districts', $data)) {
-            $this->deliveryZoneRepository->syncDistricts($zone, $data['districts'] ?? []);
+        if ($districtIds !== null) {
+            $this->deliveryZoneRepository->syncDistricts($zone, $districtIds);
         }
 
         return $zone->load('districts');
@@ -85,9 +64,21 @@ class DeliveryZoneService
     }
 
     /**
-     * Update a district (rename, reassign zone, change status).
+     * Districts grouped by division for the zone form's picker.
+     *
+     * @return Collection<string, Collection<int, District>>
      */
-    public function updateDistrict(DeliveryZoneDistrict $district, array $data): DeliveryZoneDistrict
+    public function districtChoices(): Collection
+    {
+        return District::orderBy('name')
+            ->get()
+            ->groupBy(fn (District $district) => $district->division ?: 'Other');
+    }
+
+    /**
+     * Update a district (rename, reassign zone, override charge, status).
+     */
+    public function updateDistrict(District $district, array $data): District
     {
         return $this->deliveryZoneRepository->updateDistrict($district, $data);
     }
@@ -95,11 +86,11 @@ class DeliveryZoneService
     /**
      * Flip a district between active and inactive.
      */
-    public function toggleDistrictStatus(DeliveryZoneDistrict $district): DeliveryZoneDistrict
+    public function toggleDistrictStatus(District $district): District
     {
-        $newStatus = $district->status === DeliveryZoneDistrict::STATUS_ACTIVE
-            ? DeliveryZoneDistrict::STATUS_INACTIVE
-            : DeliveryZoneDistrict::STATUS_ACTIVE;
+        $newStatus = $district->status === District::STATUS_ACTIVE
+            ? District::STATUS_INACTIVE
+            : District::STATUS_ACTIVE;
 
         return $this->deliveryZoneRepository->updateDistrict($district, ['status' => $newStatus]);
     }
@@ -110,36 +101,91 @@ class DeliveryZoneService
     }
 
     /**
+     * Resolve the effective delivery charge for a district.
+     *
+     * Precedence: district override → zone rate → site default (shipping_rate).
+     * Returns null when delivery is not available.
+     *
+     * @return array{charge: float, source: string, zone: DeliveryZone|null}|null
+     */
+    public function resolveCharge(District $district): ?array
+    {
+        if ($district->status !== District::STATUS_ACTIVE) {
+            return null;
+        }
+
+        $zone = $district->zone;
+
+        if ($zone && $zone->status !== 'active') {
+            return null;
+        }
+
+        if ($district->charge !== null) {
+            return ['charge' => (float) $district->charge, 'source' => 'district', 'zone' => $zone];
+        }
+
+        if ($zone) {
+            return ['charge' => (float) $zone->charge, 'source' => 'zone', 'zone' => $zone];
+        }
+
+        $default = SiteSetting::getValue('shipping_rate');
+
+        if ($default === null || $default === '') {
+            return null;
+        }
+
+        return ['charge' => (float) $default, 'source' => 'default', 'zone' => null];
+    }
+
+    /**
      * Calculate delivery charge for a given district and order amount.
+     *
+     * @param  string  $district  district name (as selected at checkout)
+     * @param  float  $orderAmount  order subtotal used for the free-delivery threshold
      */
     public function calculateCharge(string $district, float $orderAmount = 0): array
     {
-        $zone = $this->deliveryZoneRepository->findByDistrict($district);
+        $record = $this->deliveryZoneRepository->findDistrictByName($district);
+        $unavailable = [
+            'available' => false,
+            'charge' => 0,
+            'message' => 'Delivery not available for this district.',
+        ];
 
-        if (! $zone || $zone->status !== 'active') {
-            return [
-                'available' => false,
-                'charge' => 0,
-                'message' => 'Delivery not available for this district.',
-            ];
+        if (! $record) {
+            return $unavailable;
         }
 
-        // Free delivery if order amount meets minimum threshold
-        $freeDelivery = $zone->minimum_order_amount !== null
+        $resolved = $this->resolveCharge($record);
+
+        if ($resolved === null) {
+            return $unavailable;
+        }
+
+        $zone = $resolved['zone'];
+        $charge = $resolved['charge'];
+
+        // Free delivery when the order meets the zone's minimum threshold
+        $freeDelivery = $zone !== null
+            && $zone->minimum_order_amount !== null
             && $orderAmount >= (float) $zone->minimum_order_amount;
 
         return [
             'available' => true,
-            'zone_id' => $zone->id,
-            'zone_name' => $zone->name,
-            'zone_type' => $zone->type,
-            'charge' => $freeDelivery ? 0 : (float) $zone->charge,
-            'original_charge' => (float) $zone->charge,
-            'minimum_order_amount' => $zone->minimum_order_amount ? (float) $zone->minimum_order_amount : null,
+            'zone_id' => $zone?->id,
+            'zone_name' => $zone?->name,
+            'zone_type' => $zone?->type,
+            'district' => $record->name,
+            'source' => $resolved['source'],
+            'charge' => $freeDelivery ? 0 : $charge,
+            'original_charge' => $charge,
+            'minimum_order_amount' => $zone?->minimum_order_amount !== null
+                ? (float) $zone->minimum_order_amount
+                : null,
             'free_delivery' => $freeDelivery,
             'message' => $freeDelivery
                 ? 'Free delivery available!'
-                : 'Delivery charge: '.number_format((float) $zone->charge, 2),
+                : 'Delivery charge: '.number_format($charge, 2),
         ];
     }
 }

@@ -24,11 +24,11 @@ class DeliveryZone extends Model
     }
 
     /**
-     * The districts belonging to this delivery zone.
+     * The districts assigned to this delivery zone.
      */
     public function districts(): HasMany
     {
-        return $this->hasMany(DeliveryZoneDistrict::class);
+        return $this->hasMany(District::class);
     }
 
     /**

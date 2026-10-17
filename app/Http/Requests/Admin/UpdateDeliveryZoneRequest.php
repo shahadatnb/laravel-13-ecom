@@ -22,7 +22,7 @@ class UpdateDeliveryZoneRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'in:inside_dhaka,outside_dhaka'],
             'districts' => ['required', 'array', 'min:1'],
-            'districts.*' => ['required', 'string', 'max:100', 'distinct'],
+            'districts.*' => ['required', 'integer', 'distinct', 'exists:districts,id'],
             'charge' => ['required', 'numeric', 'min:0'],
             'minimum_order_amount' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', 'in:active,inactive'],
@@ -36,6 +36,7 @@ class UpdateDeliveryZoneRequest extends FormRequest
             'districts.required' => 'Please select at least one district.',
             'districts.min' => 'Please select at least one district.',
             'districts.*.distinct' => 'Duplicate districts are not allowed.',
+            'districts.*.exists' => 'One or more selected districts are invalid.',
             'charge.required' => 'The delivery charge is required.',
             'charge.numeric' => 'The delivery charge must be a number.',
         ];

@@ -30,11 +30,11 @@ class Inventory extends Model
     protected function casts(): array
     {
         return [
-            'current_stock' => 'integer',
-            'reserved_stock' => 'integer',
-            'minimum_stock' => 'integer',
-            'maximum_stock' => 'integer',
-            'reorder_level' => 'integer',
+            'current_stock' => 'float',
+            'reserved_stock' => 'float',
+            'minimum_stock' => 'float',
+            'maximum_stock' => 'float',
+            'reorder_level' => 'float',
         ];
     }
 

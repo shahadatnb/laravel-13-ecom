@@ -109,8 +109,11 @@
           @forelse($products as $i => $product)
           @php
             $isSimple = $product->product_type === 'simple';
-            $variantStock = $product->variants->sum('stock');
-            $productStock = $isSimple ? $product->stock : 0;
+            $isKg = $product->usesWeightPool();
+            // kg pools keep decimals; unit counts stay whole numbers.
+            $fmtStock = fn ($n) => $isKg ? rtrim(rtrim(number_format((float) $n, 3), '0'), '.') : number_format($n);
+            $variantStock = $isKg ? 0 : $product->variants->sum('stock');
+            $productStock = ($isSimple || $isKg) ? $product->stock : 0;
             $totalStock = $product->total_stock;
             $minStock = $product->minimum_stock ?? 0;
           @endphp
@@ -131,19 +134,26 @@
             </td>
             <td><code class="text-muted">{{ $product->sku ?? '—' }}</code></td>
             <td>
-              @if($isSimple)
+              @if($isKg)
+                <span class="badge badge-success">Kilogram Pool</span>
+                @if(!$isSimple)
+                  <br><small class="text-muted">{{ $product->variants_count }} variants</small>
+                @endif
+              @elseif($isSimple)
                 <span class="badge badge-secondary">Simple</span>
               @else
                 <span class="badge badge-info">Variable ({{ $product->variants_count }})</span>
               @endif
             </td>
-            {{-- Product Stock (simple only) --}}
+            {{-- Product Stock (simple or kg pool) --}}
             <td class="text-right">
-              @if($isSimple)
+              @if($isSimple || $isKg)
                 <strong class="{{ $productStock <= 0 ? 'text-danger' : ($productStock <= $minStock ? 'text-warning' : 'text-success') }}">
-                  {{ number_format($productStock) }}
+                  {{ $fmtStock($productStock) }}
                 </strong>
-                @if($minStock > 0)
+                @if($isKg)
+                  <br><small class="text-muted">kg pool</small>
+                @elseif($minStock > 0)
                   <br><small class="text-muted">min: {{ number_format($minStock) }}</small>
                 @endif
               @else
@@ -152,7 +162,7 @@
             </td>
             {{-- Variant Stock --}}
             <td class="text-right">
-              @if(!$isSimple)
+              @if(!$isSimple && !$isKg)
                 <strong class="{{ $variantStock <= 0 ? 'text-danger' : ($variantStock <= $minStock ? 'text-warning' : 'text-success') }}">
                   {{ number_format($variantStock) }}
                 </strong>
@@ -164,7 +174,7 @@
             {{-- Total Stock --}}
             <td class="text-right">
               <strong class="font-weight-bold {{ $totalStock <= 0 ? 'text-danger' : ($totalStock <= $minStock ? 'text-warning' : 'text-dark') }}">
-                {{ number_format($totalStock) }}
+                {{ $fmtStock($totalStock) }}
               </strong>
             </td>
             {{-- Status Badge --}}

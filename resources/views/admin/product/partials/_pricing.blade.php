@@ -34,10 +34,31 @@
             <div class="col-md-4">
                 <div class="form-group">
                     <label for="stock">Stock</label>
-                    <input id="stock" name="stock" type="number" value="{{ old('stock', $product->stock ?? 0) }}" class="form-control" />
+                    <input id="stock" name="stock" type="number" step="0.001" value="{{ old('stock', $product->stock ?? 0) }}" class="form-control" />
                     @error('stock')<span class="text-danger">{{ $message }}</span>@enderror
                 </div>
             </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="stock_unit">Stock Unit</label>
+                    <select id="stock_unit" name="stock_unit" class="form-control">
+                        <option value="unit" @selected(old('stock_unit', $product->stock_unit ?? 'unit') === 'unit')>Count (pcs)</option>
+                        <option value="kg" @selected(old('stock_unit', $product->stock_unit ?? 'unit') === 'kg')>Kilogram (kg pool)</option>
+                    </select>
+                    @error('stock_unit')<span class="text-danger">{{ $message }}</span>@enderror
+                    <small class="text-muted">Kilogram pool: variants deduct their weight from this stock.</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="weight">Unit Weight (kg)</label>
+                    <input id="weight" name="weight" type="number" step="0.001" min="0" value="{{ old('weight', $product->weight ?? '') }}" class="form-control" placeholder="0.000" />
+                    @error('weight')<span class="text-danger">{{ $message }}</span>@enderror
+                    <small class="text-muted">kg per single unit (kilogram pool + shipping). Required for simple kg products.</small>
+                </div>
+            </div>
+        </div>
+        <div class="row">
             <div class="col-md-4">
                 <div class="form-group">
                     <label for="minimum_stock">Minimum Stock</label>

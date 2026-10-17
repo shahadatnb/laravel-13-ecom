@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -40,11 +41,68 @@ class UpdateProductRequest extends FormRequest
             'variant_existing_images' => ['nullable', 'array'],
             'variant_existing_images.*' => ['nullable', 'array'],
             'variant_existing_images.*.*' => ['nullable', 'integer', 'exists:product_galleries,id'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.unit_weight' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'regular_price' => ['nullable', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'wholesale_price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock' => ['nullable', 'numeric', 'min:0'],
+            'stock_unit' => [
+                'nullable',
+                'in:unit,kg',
+                function ($attribute, $value, $fail) use ($product) {
+                    if ($value !== 'kg') {
+                        $stock = $this->input('stock');
+                        if ($stock !== null && (float) $stock !== floor((float) $stock)) {
+                            $fail('Count stock must be a whole number. Switch Stock Unit to Kilogram (kg) for decimals.');
+                        }
+
+                        return;
+                    }
+
+                    if (! $product->variants()->exists()) {
+                        $weight = $this->input('weight', $product->weight) ?? $product->weight;
+                        if ($weight === null || $weight === '' || (float) $weight <= 0) {
+                            $fail('Weight (kg) is required for a kilogram-stock product without variants.');
+                        }
+
+                        return;
+                    }
+
+                    // Prefer the submitted variant rows; the edit page keeps
+                    // stored variants current via AJAX, but a form submit is
+                    // the authoritative snapshot of what will be saved.
+                    $incoming = $this->input('variants');
+
+                    if (is_array($incoming) && $incoming !== []) {
+                        foreach ($incoming as $variant) {
+                            $explicit = $variant['unit_weight'] ?? null;
+
+                            if (is_numeric($explicit) && (float) $explicit > 0) {
+                                continue;
+                            }
+
+                            $name = (string) ($variant['name'] ?? '');
+                            $attributes = is_array($variant['attributes'] ?? null)
+                                ? $variant['attributes']
+                                : (json_decode($variant['attributes'] ?? '[]', true) ?: []);
+
+                            if (ProductVariant::deriveUnitWeight(array_merge(['name' => $name], $attributes)) === null) {
+                                $fail("Variant \"{$name}\" needs a weight like \"5kg\" (or fill the Weight column) so kilogram stock can be tracked.");
+                            }
+                        }
+
+                        return;
+                    }
+
+                    foreach ($product->variants as $variant) {
+                        if ($variant->resolveUnitWeight() === null) {
+                            $fail("Variant \"{$variant->name}\" needs a weight like \"5kg\" (or fill the Weight column) so kilogram stock can be tracked.");
+                        }
+                    }
+                },
+            ],
             'minimum_stock' => ['nullable', 'integer', 'min:0'],
             'maximum_order' => ['nullable', 'integer', 'min:0'],
             'weight' => ['nullable', 'numeric', 'min:0'],
@@ -75,6 +133,7 @@ class UpdateProductRequest extends FormRequest
             'barcode.unique' => 'The barcode has already been taken.',
             'status.required' => 'The status is required.',
             'visibility.required' => 'The visibility is required.',
+            'stock_unit.in' => 'The stock unit must be Count or Kilogram (kg).',
         ];
     }
 }

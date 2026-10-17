@@ -57,11 +57,12 @@ class StockController extends Controller
 
         // Compute total stock for each product
         $products->getCollection()->transform(function ($product) {
-            if ($product->product_type === 'simple') {
+            if ($product->product_type === 'simple' || $product->usesWeightPool()) {
                 $product->total_stock = $product->stock;
             } else {
                 $product->total_stock = $product->variants->sum('stock');
             }
+
             return $product;
         });
 
@@ -98,6 +99,8 @@ class StockController extends Controller
      */
     public function stockIn(Request $request, Product $product): RedirectResponse
     {
+        $usesKgPool = $product->usesWeightPool();
+
         $validated = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
             'variant_stocks' => 'nullable|array',
@@ -106,7 +109,7 @@ class StockController extends Controller
             'variant_stocks.*.reason' => 'nullable|string|max:500',
             'variant_stocks.*.unit_cost' => 'nullable|numeric|min:0',
             'variant_stocks.*.reference_number' => 'nullable|string|max:100',
-            'quantity' => 'nullable|integer|min:1',
+            'quantity' => $usesKgPool ? 'nullable|numeric|min:0.001' : 'nullable|integer|min:1',
             'reason' => 'nullable|string|max:500',
             'unit_cost' => 'nullable|numeric|min:0',
             'reference_number' => 'nullable|string|max:100',
@@ -114,7 +117,7 @@ class StockController extends Controller
 
         $warehouseId = $validated['warehouse_id'];
 
-        if (isset($validated['variant_stocks']) && count($validated['variant_stocks']) > 0) {
+        if (! $usesKgPool && isset($validated['variant_stocks']) && count($validated['variant_stocks']) > 0) {
             foreach ($validated['variant_stocks'] as $variantStock) {
                 if (empty($variantStock['variant_id']) || empty($variantStock['quantity'])) {
                     continue;
@@ -162,7 +165,7 @@ class StockController extends Controller
         Product::where('id', $product->id)->increment('stock', $quantity);
 
         return redirect()->route('admin.stock.index')
-            ->with('success', 'Stock added successfully.');
+            ->with('success', $usesKgPool ? 'Stock added to the kilogram pool successfully.' : 'Stock added successfully.');
     }
 
     /**
@@ -246,8 +249,9 @@ class StockController extends Controller
                 $qty = (int) $qty;
 
                 $product = Product::find($productId);
-                if (!$product || $product->product_type !== 'simple') {
+                if (! $product || $product->product_type !== 'simple') {
                     $errors[] = "Product #{$productId}: Not a simple product — skipped.";
+
                     continue;
                 }
 
@@ -280,15 +284,16 @@ class StockController extends Controller
             DB::commit();
 
             $summary = "Bulk adjustment complete: {$updated} products updated ({$mode}).";
-            if (!empty($errors)) {
-                $summary .= ' Errors: ' . implode(' | ', array_slice($errors, 0, 5));
+            if (! empty($errors)) {
+                $summary .= ' Errors: '.implode(' | ', array_slice($errors, 0, 5));
             }
 
             return redirect()->route('admin.stock.index')
                 ->with('success', $summary);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Bulk adjustment failed: ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['error' => 'Bulk adjustment failed: '.$e->getMessage()])->withInput();
         }
     }
 }

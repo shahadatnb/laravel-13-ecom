@@ -27,13 +27,13 @@ interface InventoryServiceInterface
     public function getInventoryStatistics(): array;
 
     // Stock operations
-    public function stockIn(int $productId, int $warehouseId, int $quantity, array $data = []): Inventory;
+    public function stockIn(int $productId, int $warehouseId, int|float $quantity, array $data = []): Inventory;
 
-    public function stockOut(int $productId, int $warehouseId, int $quantity, array $data = []): Inventory;
+    public function stockOut(int $productId, int $warehouseId, int|float $quantity, array $data = []): Inventory;
 
-    public function adjustStock(int $productId, int $warehouseId, int $newQuantity, string $reason, array $data = []): Inventory;
+    public function adjustStock(int $productId, int $warehouseId, int|float $newQuantity, string $reason, array $data = []): Inventory;
 
-    public function transferStock(int $fromWarehouseId, int $toWarehouseId, int $productId, int $quantity, array $data = []): StockTransfer;
+    public function transferStock(int $fromWarehouseId, int $toWarehouseId, int $productId, int|float $quantity, array $data = []): StockTransfer;
 
     public function completeTransfer(StockTransfer $transfer): StockTransfer;
 
@@ -45,6 +45,12 @@ interface InventoryServiceInterface
     public function releaseReservation(Order $order): void;
 
     public function convertReservation(Order $order): void;
+
+    // Order stock mirror — keeps the warehouse ledger aligned with the
+    // storefront pool that OrderService deducts from.
+    public function recordOrderSale(array $deltas, Order $order): void;
+
+    public function recordOrderRestock(array $deltas, Order $order): void;
 
     // Ledger
     public function getLedger(int $productId, int $perPage = 15): LengthAwarePaginator;
